@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../api/axios";
 import { useNavigate } from "react-router-dom";
+import toast from 'react-hot-toast';
 
 export default function TicketForm() {
   const navigate = useNavigate();
@@ -15,10 +16,10 @@ export default function TicketForm() {
     e.preventDefault();
     try {
       await api.post("/tickets", formData);
-      alert("Ticket creado exitosamente");
+      toast.success("Ticket creado exitosamente");
       navigate("/mis-tickets");
     } catch (error) {
-      alert("Error creando ticket");
+      toast.success("Error creando ticket");
     }
   };
 

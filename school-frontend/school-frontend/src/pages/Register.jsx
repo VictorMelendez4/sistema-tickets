@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/axios";
 import { AuthContext } from "../context/AuthContext";
+import toast from 'react-hot-toast';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -29,12 +30,12 @@ export default function Register() {
         // Guardamos sesión usando la función del AuthContext (si la tienes implementada así)
         // Ojo: Si tu AuthContext no expone 'setAuthData', usa login normal o redirige a login.
         // Asumimos que el backend devuelve token y user.
-        alert("¡Cuenta creada! Por favor inicia sesión.");
+       toast.success("¡Cuenta creada! Por favor inicia sesión.");
         navigate("/login");
       }
     } catch (error) {
       console.error(error);
-      alert(error.response?.data?.msg || "Error al registrarse");
+     toast.success(error.response?.data?.msg || "Error al registrarse");
     }
   };
 

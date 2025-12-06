@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../api/axios";
 import { AuthContext } from "../context/AuthContext";
+import toast from 'react-hot-toast';
 
 export default function TicketDetail() {
   const { id } = useParams();
@@ -26,7 +27,7 @@ export default function TicketDetail() {
         setLoading(false);
       } catch (error) {
         console.error(error);
-        alert("Error cargando ticket");
+        toast.success("Error cargando ticket");
         navigate("/mis-tickets");
       }
     }
@@ -37,10 +38,10 @@ export default function TicketDetail() {
     e.preventDefault();
     try {
       await api.put(`/tickets/${id}`, response);
-      alert("Ticket actualizado correctamente");
+      toast.success("Ticket actualizado correctamente");
       navigate("/"); // Volver al dashboard
     } catch (error) {
-      alert("Error actualizando ticket");
+      toast.success("Error actualizando ticket");
     }
   };
 

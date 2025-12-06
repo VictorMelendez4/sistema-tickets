@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/axios";
 import { AuthContext } from "../context/AuthContext";
+import toast from 'react-hot-toast';
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -27,7 +28,7 @@ export default function Login() {
 
     } catch (error) {
       console.error(error);
-      alert("Credenciales incorrectas o error de conexión");
+      toast.error("Error al iniciar sesión");
     }
   };
 
