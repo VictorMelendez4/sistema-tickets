@@ -17,8 +17,9 @@ export default function AppRouter() {
       {!usuario ? (
         <>
           <Route path="/login" element={<Login />} />
-          <Route path="*" element={<Navigate to="/login" />} />
           <Route path="/register" element={<Register />} />
+          <Route path="*" element={<Navigate to="/login" />} />
+          
         </>
       ) : (
         <Route element={<Layout />}>
