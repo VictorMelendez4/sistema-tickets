@@ -51,3 +51,18 @@ export async function updateTicket(req, res) {
     res.status(500).json({ msg: "Error actualizando ticket" });
   }
 }
+
+// Obtener un solo ticket por ID
+export async function getTicket(req, res) {
+  try {
+    const ticket = await Ticket.findById(req.params.id)
+      .populate("createdBy", "email firstName lastName")
+      .populate("assignedTo", "email firstName lastName");
+
+    if (!ticket) return res.status(404).json({ msg: "Ticket no encontrado" });
+
+    res.json(ticket);
+  } catch (err) {
+    res.status(500).json({ msg: "Error obteniendo ticket" });
+  }
+}

@@ -8,6 +8,7 @@ import Dashboard from "../pages/Dashboard";
 import TicketForm from "../pages/TicketForm";
 import TicketList from "../pages/TicketList";
 import Register from "../pages/Register";
+import TicketDetail from "../pages/TicketDetail";
 
 export default function AppRouter() {
   const { usuario } = useContext(AuthContext);
@@ -17,7 +18,7 @@ export default function AppRouter() {
       {!usuario ? (
         <>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/registro" element={<Register />} />
           <Route path="*" element={<Navigate to="/login" />} />
           
         </>
@@ -26,7 +27,7 @@ export default function AppRouter() {
           {/* Rutas Comunes */}
           <Route path="/" element={<Dashboard />} />
           <Route path="/mis-tickets" element={<TicketList />} />
-          
+          <Route path="/tickets/:id" element={<TicketDetail />} />
           {/* Solo Clientes pueden crear */}
           {usuario.role === "CLIENT" && (
             <Route path="/nuevo-ticket" element={<TicketForm />} />
@@ -35,6 +36,7 @@ export default function AppRouter() {
           {/* Solo Soporte/Admin ven todos */}
           {(usuario.role === "ADMIN" || usuario.role === "SUPPORT") && (
             <Route path="/gestion-tickets" element={<TicketList />} />
+            
           )}
 
           <Route path="*" element={<Navigate to="/" />} />

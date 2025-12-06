@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { api } from "../api/axios";
 import { AuthContext } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 
 export default function TicketList() {
   const [tickets, setTickets] = useState([]);
@@ -57,8 +58,10 @@ export default function TicketList() {
                 <td>{new Date(t.createdAt).toLocaleDateString()}</td>
                 {usuario.role !== "CLIENT" && <td>{t.createdBy?.email}</td>}
                 <td>
-                  <button className="btn btn-sm btn-outline-primary">Ver Detalles</button>
-                </td>
+                    <Link to={`/tickets/${t._id}`} className="btn btn-sm btn-outline-primary">
+                            Ver Detalles
+                    </Link>
+                 </td>
               </tr>
             ))}
           </tbody>
