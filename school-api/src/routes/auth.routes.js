@@ -1,20 +1,16 @@
-// src/routes/auth.routes.js
 import { Router } from "express";
 import {
+  register,
   login,
-  registerAdmin,
-  registerTeacher,
 } from "../controllers/auth.controller.js";
+import { auth } from "../middlewares/auth.js";
 
 const router = Router();
 
-// Login
+router.post("/register", register);
 router.post("/login", login);
 
-// Registrar admin (solo para seed inicial, luego puedes no usarla)
-router.post("/register-admin", registerAdmin);
-
-// Registrar docente
-router.post("/register-teacher", registerTeacher);
+// Si luego quieres un /profile, lo implementamos bien en el controlador;
+// por ahora lo quitamos porque no existe y truena.
 
 export default router;
