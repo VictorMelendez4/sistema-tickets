@@ -29,7 +29,14 @@ const TicketSchema = new mongoose.Schema(
       ref: "User",
       default: null
     },
-    solution: { type: String }, // Para cuando se resuelva
+    solution: { type: String }, 
+    
+    // --- NUEVO CAMPO: Historial de Comentarios ---
+    comments: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment" 
+    }]
+    // ---------------------------------------------
   },
   { timestamps: true }
 );

@@ -5,6 +5,8 @@ import authRoutes from "./routes/auth.routes.js";
 import ticketRoutes from "./routes/ticket.routes.js";
 import mongoSanitize from "express-mongo-sanitize";
 import rateLimit from "express-rate-limit";
+import commentRoutes from "./routes/comment.routes.js";
+
 
 const app = express();
 
@@ -31,6 +33,7 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/tickets", ticketRoutes);
 
+app.use("/api/comments", commentRoutes);
 
 
 export default app;

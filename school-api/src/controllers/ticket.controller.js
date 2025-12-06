@@ -19,26 +19,32 @@ export async function createTicket(req, res) {
   }
 }
 
-// Obtener mis tickets (CLIENT) o todos (ADMIN/SUPPORT)
-export async function getTickets(req, res) {
+// Obtener un solo ticket por ID (con historial de comentarios)
+export async function getTicket(req, res) {
   try {
-    let filtro = {};
-    
-    // Si NO es soporte ni admin, solo ve sus propios tickets
-    if (req.user.role === "CLIENT") {
-      filtro.createdBy = req.user.id;
+    const ticket = await Ticket.findById(req.params.id)
+      .populate("createdBy", "email firstName lastName")
+      .populate("assignedTo", "email firstName lastName")
+      .populate({
+        path: "comments",
+        options: { sort: { createdAt: 1 } },  // Orden ascendente
+        populate: {
+          path: "author",
+          select: "firstName lastName email role" // Autor del comentario
+        }
+      });
+
+    if (!ticket) {
+      return res.status(404).json({ msg: "Ticket no encontrado" });
     }
 
-    const tickets = await Ticket.find(filtro)
-      .populate("createdBy", "firstName lastName email")
-      .populate("assignedTo", "firstName lastName email")
-      .sort({ createdAt: -1 });
-
-    res.json(tickets);
+    res.json(ticket);
   } catch (err) {
-    res.status(500).json({ msg: "Error obteniendo tickets" });
+    console.error("Error en getTicket:", err);
+    res.status(500).json({ msg: "Error obteniendo ticket" });
   }
 }
+
 
 // Actualizar ticket (Asignar, cambiar estado, resolver)
 export async function updateTicket(req, res) {
