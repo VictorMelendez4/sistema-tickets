@@ -101,7 +101,7 @@ export default function Login() {
               <p className="text-muted">
                 ¿Necesitas ayuda y no tienes cuenta?{" "}
                 {/* Nota: Asegúrate de crear una página de registro si la necesitas, o borra esto */}
-                <Link to="/registro" className="text-primary fw-bold text-decoration-none">
+                <Link to="/register" className="text-primary fw-bold text-decoration-none">
                   Regístrate como Cliente
                 </Link>
               </p>
