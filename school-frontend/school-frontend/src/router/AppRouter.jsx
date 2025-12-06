@@ -7,6 +7,7 @@ import Layout from "../components/Layout";
 import Dashboard from "../pages/Dashboard";
 import TicketForm from "../pages/TicketForm";
 import TicketList from "../pages/TicketList";
+import Register from "../pages/Register";
 
 export default function AppRouter() {
   const { usuario } = useContext(AuthContext);
@@ -17,6 +18,7 @@ export default function AppRouter() {
         <>
           <Route path="/login" element={<Login />} />
           <Route path="*" element={<Navigate to="/login" />} />
+          <Route path="/register" element={<Register />} />
         </>
       ) : (
         <Route element={<Layout />}>
