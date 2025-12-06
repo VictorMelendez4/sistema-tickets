@@ -2,7 +2,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
-import { Teacher } from "../models/Teacher.js";
+
 
 // =========================
 // Función auxiliar: crear token
@@ -105,69 +105,42 @@ export async function registerAdmin(req, res) {
 }
 
 // =========================
-// 3) Registrar DOCENTE
+// 3) Registrar 
 // =========================
-export async function registerTeacher(req, res) {
+export async function register(req, res) {
   try {
-    const {
-      email,
-      password,
-      firstName,
-      lastName,
-      phone,
-      status,        // por si lo usas: "ACTIVO"/"INACTIVO"
-      specialty,     // array de strings opcional
-    } = req.body;
+    const { email, password, firstName, lastName } = req.body;
 
-    // 1. Verificar si ya existe un usuario con ese email
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ msg: "Ya existe un usuario con ese correo" });
-    }
+    // Verificar si existe
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ msg: "El correo ya está registrado" });
 
-    // 2. Crear Teacher
-    const teacher = await Teacher.create({
-      firstName,
-      lastName,
-      employeeId: `DOC-${Date.now()}`, // Generar ID único
-      phone: phone || "",
-      emailInst: email,
-      specialty: specialty || [],
-    });
-
-    // 3. Hashear la contraseña
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
 
-    // 4. Crear User vinculado al Teacher
+    // Crear Usuario (Por defecto es CLIENT)
     const user = await User.create({
       email,
       passwordHash: hash,
-      role: "TEACHER",
-      teacher: teacher._id,
+      firstName,
+      lastName,
+      role: "CLIENT" 
     });
 
     const token = generateToken(user);
 
-    return res.status(201).json({
+    res.status(201).json({
       token,
       user: {
         id: user._id,
         email: user.email,
         role: user.role,
-        teacher: {
-          id: teacher._id,
-          firstName: teacher.firstName,
-          lastName: teacher.lastName,
-        },
-      },
+        firstName: user.firstName,
+        lastName: user.lastName
+      }
     });
   } catch (err) {
-    console.error("REGISTER TEACHER ERROR:", err);
-    return res.status(500).json({
-      msg: "Error registrando docente",
-      error: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
+    res.status(500).json({ msg: "Error en registro", error: err.message });
   }
 }
