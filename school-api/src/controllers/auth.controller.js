@@ -30,7 +30,7 @@ export async function login(req, res) {
     console.log("LOGIN BODY:", req.body);
 
     // Buscar usuario por email
-    const user = await User.findOne({ email }).populate("teacher");
+    const user = await User.findOne({ email });
     if (!user) {
       console.log("LOGIN: usuario no encontrado");
       return res.status(400).json({ msg: "Credenciales incorrectas" });
@@ -46,18 +46,14 @@ export async function login(req, res) {
     const token = generateToken(user);
 
     return res.json({
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        teacher: user.teacher ? {
-          id: user.teacher._id,
-          firstName: user.teacher.firstName,
-          lastName: user.teacher.lastName,
-        } : null,
-      },
-    });
+    token,
+    user: {
+    id: user._id,
+    email: user.email,
+    role: user.role,
+  },
+});
+
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     return res.status(500).json({ msg: "Error en login" });
