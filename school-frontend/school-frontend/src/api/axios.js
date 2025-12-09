@@ -1,10 +1,14 @@
+// src/api/axios.js
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: "/api",         
+  baseURL: "http://159.54.142.179/api", 
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Interceptor para agregar token automáticamente
+// Opcional pero útil: meter el token automáticamente en cada request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -12,5 +16,3 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
-
-export default api; // opcional, por si en algún lado lo importas por default

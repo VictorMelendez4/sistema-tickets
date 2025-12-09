@@ -1,144 +1,97 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
-import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
-// 1. Importamos el componente de notificaciones
-import { Toaster } from "react-hot-toast";
+import { NavLink, Outlet, Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Toaster } from 'react-hot-toast';
 
-export default function Layout() {
-  const { usuario, logout } = useContext(AuthContext);
+function Layout() {
+  const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
 
-  // Función para resaltar el enlace activo
-  const isActive = (path) =>
-    location.pathname === path
-      ? "bg-primary text-white shadow-sm"
-      : "text-dark hover-bg-light";
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  const displayName = user?.firstName ? `${user.firstName} ${user.lastName}` : user?.email;
+
+  // Estilos base para los links
+  const linkStyle = ({ isActive }) => ({
+    display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+    borderRadius: 8, textDecoration: "none", fontSize: 14,
+    color: isActive ? "#e5e7eb" : "#9ca3af",
+    backgroundColor: isActive ? "#1d4ed8" : "transparent",
+    transition: "all 0.2s"
+  });
 
   return (
-    <div className="d-flex min-vh-100 bg-light">
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#020617", color: "#e5e7eb", fontFamily: "sans-serif" }}>
       
-      {/* === SIDEBAR (MENÚ LATERAL) === */}
-      <div
-        className="d-flex flex-column p-3 bg-white border-end shadow-sm"
-        style={{ width: "260px", position: "fixed", height: "100%", zIndex: 1000 }}
-      >
-        {/* Marca / Logo */}
-        <div className="d-flex align-items-center mb-4 px-2 mt-2">
-          <div className="bg-primary rounded-3 d-flex align-items-center justify-content-center me-2" style={{ width: 35, height: 35 }}>
-            <i className="bi bi-headset text-white fs-5"></i>
-          </div>
-          <span className="fs-5 fw-bold text-dark tracking-tight">HelpDesk Pro</span>
+      {/* SIDEBAR */}
+      <aside style={{ width: 260, backgroundColor: "#0f172a", borderRight: "1px solid #1e293b", padding: "24px 16px", display: "flex", flexDirection: "column", position: "fixed", height: "100%" }}>
+        
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 30, paddingLeft: 8 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🎫</div>
+          <div style={{ fontWeight: 700, fontSize: 18, color: "white" }}>HelpDesk</div>
         </div>
 
-        <hr className="text-muted opacity-25" />
+        {/* MENÚ DE NAVEGACIÓN */}
+        <nav style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          
+          <NavLink to="/" end style={linkStyle}>
+            <span>🏠</span> Dashboard
+          </NavLink>
 
-        {/* Navegación */}
-        <ul className="nav nav-pills flex-column mb-auto">
-          <li className="nav-item mb-1">
-            <Link to="/" className={`nav-link d-flex align-items-center gap-2 ${isActive("/")}`}>
-              <i className="bi bi-speedometer2"></i> Dashboard
-            </Link>
-          </li>
-
-          {/* MENÚ PARA CLIENTES */}
-          {usuario?.role === "CLIENT" && (
+          {/* OPCIONES SOLO PARA CLIENTE */}
+          {user?.role === "CLIENT" && (
             <>
-              <li className="nav-item mt-3 mb-1">
-                <small className="text-uppercase text-muted fw-bold ps-3" style={{ fontSize: "0.7rem" }}>
-                  Mis Gestiones
-                </small>
-              </li>
-              <li className="nav-item mb-1">
-                <Link to="/nuevo-ticket" className={`nav-link d-flex align-items-center gap-2 ${isActive("/nuevo-ticket")}`}>
-                  <i className="bi bi-plus-circle"></i> Nuevo Ticket
-                </Link>
-              </li>
-              <li className="nav-item mb-1">
-                <Link to="/mis-tickets" className={`nav-link d-flex align-items-center gap-2 ${isActive("/mis-tickets")}`}>
-                  <i className="bi bi-ticket-perforated"></i> Mis Tickets
-                </Link>
-              </li>
+              <div style={{ fontSize: 11, textTransform: "uppercase", color: "#64748b", marginTop: 10, paddingLeft: 10 }}>Mi Soporte</div>
+              
+              <NavLink to="/nuevo-ticket" style={linkStyle}>
+                <span>➕</span> Nuevo Ticket
+              </NavLink>
+              
+              <NavLink to="/mis-tickets" style={linkStyle}>
+                <span>📂</span> Mis Tickets
+              </NavLink>
             </>
           )}
 
-          {/* MENÚ PARA SOPORTE / ADMIN */}
-          {(usuario?.role === "ADMIN" || usuario?.role === "SUPPORT") && (
+          {/* OPCIONES SOLO PARA ADMIN / SOPORTE */}
+          {(user?.role === "ADMIN" || user?.role === "SUPPORT") && (
             <>
-              <li className="nav-item mt-3 mb-1">
-                <small className="text-uppercase text-muted fw-bold ps-3" style={{ fontSize: "0.7rem" }}>
-                  Administración
-                </small>
-              </li>
-              <li className="nav-item mb-1">
-                <Link to="/gestion-tickets" className={`nav-link d-flex align-items-center gap-2 ${isActive("/gestion-tickets")}`}>
-                  <i className="bi bi-inbox"></i> Bandeja de Tickets
-                </Link>
-              </li>
+              <div style={{ fontSize: 11, textTransform: "uppercase", color: "#64748b", marginTop: 10, paddingLeft: 10 }}>Administración</div>
+              
+              <NavLink to="/gestion-tickets" style={linkStyle}>
+                <span>📥</span> Bandeja de Entrada
+              </NavLink>
             </>
           )}
-        </ul>
 
-        {/* Footer del Usuario */}
-        <div className="mt-auto border-top pt-3">
-          <div className="d-flex align-items-center mb-3 px-2">
-            <div
-              className="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2 fw-bold"
-              style={{ width: 38, height: 38 }}
-            >
-              {usuario?.email?.charAt(0).toUpperCase()}
+        </nav>
+
+        {/* Footer Usuario */}
+        <div style={{ marginTop: "auto", borderTop: "1px solid #1e293b", paddingTop: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#334155", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>
+              {displayName.charAt(0)}
             </div>
-            <div className="overflow-hidden">
-              <div className="fw-bold text-dark small text-truncate">
-                {usuario?.firstName}
-              </div>
-              <div className="text-muted small text-truncate" style={{ fontSize: "0.75rem" }}>
-                {usuario?.email}
-              </div>
+            <div style={{ overflow: "hidden" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{displayName}</div>
+              <div style={{ fontSize: 11, color: "#94a3b8" }}>{user?.role}</div>
             </div>
           </div>
-          <button
-            onClick={logout}
-            className="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
-          >
-            <i className="bi bi-box-arrow-right"></i> Cerrar Sesión
+          <button onClick={logout} style={{ width: "100%", padding: "8px", borderRadius: 6, border: "1px solid #ef4444", background: "transparent", color: "#ef4444", cursor: "pointer", fontSize: 13 }}>
+            Cerrar Sesión
           </button>
         </div>
-      </div>
+      </aside>
 
-      {/* === CONTENIDO PRINCIPAL === */}
-      <div className="flex-grow-1" style={{ marginLeft: "260px" }}>
-        {/* Aquí renderizamos las páginas */}
-        <div className="p-4">
-          <Outlet />
-        </div>
-
-        {/* 2. Aquí vive el "Tostador" para las notificaciones */}
-        <Toaster 
-          position="top-right" 
-          reverseOrder={false} 
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              style: {
-                background: '#dcfce7', // Verde claro
-                color: '#166534',      // Verde oscuro
-                border: '1px solid #bbf7d0'
-              },
-            },
-            error: {
-              style: {
-                background: '#fee2e2', // Rojo claro
-                color: '#991b1b',      // Rojo oscuro
-                border: '1px solid #fecaca'
-              },
-            },
-          }}
-        />
-      </div>
+      {/* CONTENIDO */}
+      <main style={{ flex: 1, padding: "30px", marginLeft: 260, backgroundColor: "#020617" }}>
+        <Outlet />
+        <Toaster position="top-right" />
+      </main>
     </div>
   );
 }
+
+export default Layout;

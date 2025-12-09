@@ -140,3 +140,17 @@ export async function register(req, res) {
     res.status(500).json({ msg: "Error en registro", error: err.message });
   }
 }
+
+// Obtener lista de usuarios que son SOPORTE o ADMIN (para asignar tickets)
+export async function getSupportAgents(req, res) {
+  try {
+    // Buscamos usuarios cuyo rol sea SUPPORT o ADMIN
+    const agents = await User.find({ role: { $in: ["SUPPORT", "ADMIN"] } })
+      .select("firstName lastName email role"); // Solo traemos datos necesarios
+    
+    res.json(agents);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Error al obtener agentes" });
+  }
+}

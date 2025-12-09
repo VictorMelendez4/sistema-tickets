@@ -1,64 +1,61 @@
-import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 
 export default function Dashboard() {
-  const { usuario } = useContext(AuthContext);
+  const { user } = useAuth();
 
   return (
-    <div className="container mt-4">
-      <div className="p-5 mb-4 bg-light rounded-3 shadow-sm">
-        <div className="container-fluid py-3">
-          <h1 className="display-5 fw-bold">Hola, {usuario?.firstName || "Usuario"} 👋</h1>
-          <p className="col-md-8 fs-4 text-muted">
-            Bienvenido al sistema de soporte técnico. 
-            {usuario?.role === "CLIENT" 
-              ? " Aquí puedes reportar incidencias y dar seguimiento a tus casos." 
-              : " Aquí puedes gestionar y resolver los tickets asignados."}
-          </p>
-          
-          {usuario?.role === "CLIENT" ? (
-            <Link to="/nuevo-ticket" className="btn btn-primary btn-lg mt-3">
-              <i className="bi bi-plus-circle me-2"></i> Crear un Ticket
+    <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      
+      {/* Tarjeta de Bienvenida */}
+      <div style={{ 
+        backgroundColor: "#1e293b", 
+        padding: "40px", 
+        borderRadius: "16px", 
+        marginBottom: "30px",
+        border: "1px solid #334155"
+      }}>
+        <h1 style={{ margin: "0 0 10px 0", fontSize: "2.5rem" }}>Hola, {user?.firstName} 👋</h1>
+        <p style={{ color: "#94a3b8", fontSize: "1.1rem", marginBottom: "30px" }}>
+          Bienvenido al centro de soporte. 
+          {user?.role === "CLIENT" 
+            ? " ¿Tuviste algún problema con tu equipo? Estamos aquí para ayudarte." 
+            : " Aquí tienes el resumen de tickets pendientes."}
+        </p>
+
+        {/* BOTONES DIFERENTES SEGÚN ROL */}
+        {user?.role === "CLIENT" ? (
+          <div style={{ display: "flex", gap: 15 }}>
+            <Link to="/nuevo-ticket" style={{ textDecoration: "none", backgroundColor: "#3b82f6", color: "white", padding: "12px 24px", borderRadius: "8px", fontWeight: "bold", display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span>➕</span> Crear Nuevo Ticket
             </Link>
-          ) : (
-            <Link to="/gestion-tickets" className="btn btn-success btn-lg mt-3">
-              <i className="bi bi-inbox me-2"></i> Ver Tickets Pendientes
+            <Link to="/mis-tickets" style={{ textDecoration: "none", backgroundColor: "transparent", border: "1px solid #475569", color: "white", padding: "12px 24px", borderRadius: "8px", fontWeight: "bold" }}>
+              Ver mis casos
             </Link>
-          )}
+          </div>
+        ) : (
+          <Link to="/gestion-tickets" style={{ textDecoration: "none", backgroundColor: "#10b981", color: "white", padding: "12px 24px", borderRadius: "8px", fontWeight: "bold" }}>
+            Ver Bandeja de Entrada
+          </Link>
+        )}
+      </div>
+
+      {/* Tarjetas Informativas */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 20 }}>
+        <div style={{ backgroundColor: "#0f172a", padding: 24, borderRadius: 12, border: "1px solid #1e293b" }}>
+          <h3 style={{ color: "#3b82f6" }}>Soporte Rápido</h3>
+          <p style={{ color: "#64748b", fontSize: 14 }}>Atención prioritaria a incidencias críticas.</p>
+        </div>
+        <div style={{ backgroundColor: "#0f172a", padding: 24, borderRadius: 12, border: "1px solid #1e293b" }}>
+          <h3 style={{ color: "#10b981" }}>Hardware & Software</h3>
+          <p style={{ color: "#64748b", fontSize: 14 }}>Reparación de equipos e instalación.</p>
+        </div>
+        <div style={{ backgroundColor: "#0f172a", padding: 24, borderRadius: 12, border: "1px solid #1e293b" }}>
+          <h3 style={{ color: "#f59e0b" }}>Redes</h3>
+          <p style={{ color: "#64748b", fontSize: 14 }}>Problemas de conectividad e internet.</p>
         </div>
       </div>
 
-      {/* Tarjetas de Resumen (Estáticas por ahora, visualmente bonitas) */}
-      <div className="row g-4">
-        <div className="col-md-4">
-          <div className="card text-center border-0 shadow-sm h-100 py-4">
-            <div className="card-body">
-              <h1 className="text-primary"><i className="bi bi-ticket-detailed"></i></h1>
-              <h5 className="card-title mt-2">Soporte Rápido</h5>
-              <p className="card-text text-muted">Atención prioritaria a incidencias críticas.</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card text-center border-0 shadow-sm h-100 py-4">
-            <div className="card-body">
-              <h1 className="text-success"><i className="bi bi-laptop"></i></h1>
-              <h5 className="card-title mt-2">Hardware & Software</h5>
-              <p className="card-text text-muted">Reparación de equipos e instalación de programas.</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card text-center border-0 shadow-sm h-100 py-4">
-            <div className="card-body">
-              <h1 className="text-warning"><i className="bi bi-wifi"></i></h1>
-              <h5 className="card-title mt-2">Redes</h5>
-              <p className="card-text text-muted">Solución a problemas de conectividad e internet.</p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

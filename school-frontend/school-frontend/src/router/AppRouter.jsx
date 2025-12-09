@@ -1,47 +1,63 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
-
-import Login from "../pages/Login";
-import Layout from "../components/Layout";
+import { useAuth } from "../context/AuthContext";
 import Dashboard from "../pages/Dashboard";
-import TicketForm from "../pages/TicketForm";
 import TicketList from "../pages/TicketList";
+import Login from "../pages/Login";
 import Register from "../pages/Register";
-import TicketDetail from "../pages/TicketDetail";
+import TicketForm from "../pages/TicketForm"; 
+import TicketDetail from "../pages/TicketDetail"; 
+import Layout from "../components/Layout";
+
+function PrivateRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) return <div className="p-5 text-center">Cargando sistema...</div>;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  return children;
+}
 
 export default function AppRouter() {
-  const { usuario } = useContext(AuthContext);
+  const { user } = useAuth();
 
   return (
     <Routes>
-      {!usuario ? (
-        <>
-          <Route path="/login" element={<Login />} />
-          <Route path="/registro" element={<Register />} />
-          <Route path="*" element={<Navigate to="/login" />} />
-          
-        </>
-      ) : (
-        <Route element={<Layout />}>
-          {/* Rutas Comunes */}
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/mis-tickets" element={<TicketList />} />
-          <Route path="/tickets/:id" element={<TicketDetail />} />
-          {/* Solo Clientes pueden crear */}
-          {usuario.role === "CLIENT" && (
-            <Route path="/nuevo-ticket" element={<TicketForm />} />
-          )}
+      {/* 1. RUTAS PÚBLICAS */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/registro" element={<Register />} />
 
-          {/* Solo Soporte/Admin ven todos */}
-          {(usuario.role === "ADMIN" || usuario.role === "SUPPORT") && (
-            <Route path="/gestion-tickets" element={<TicketList />} />
-            
-          )}
+      {/* 2. RUTAS PROTEGIDAS (Dentro del Layout) */}
+      <Route
+        element={
+          <PrivateRoute>
+            <Layout />
+          </PrivateRoute>
+        }
+      >
+        {/* Dashboard Principal */}
+        <Route path="/" element={<Dashboard />} />
 
-          <Route path="*" element={<Navigate to="/" />} />
-        </Route>
-      )}
+        {/* --- RUTAS DE TICKETS --- */}
+        
+        {/* Para el Cliente: "Mis Tickets" */}
+        <Route path="/mis-tickets" element={<TicketList />} />
+        
+        {/* Para el Cliente: "Nuevo Ticket" */}
+        <Route path="/nuevo-ticket" element={<TicketForm />} />
+
+        {/* Para Admin/Soporte: "Bandeja de Entrada" */}
+        <Route path="/gestion-tickets" element={<TicketList />} />
+        
+        {/* Ruta genérica por si acaso */}
+        <Route path="/tickets" element={<TicketList />} />
+
+        {/* Detalle del Ticket (Para todos) */}
+        <Route path="/tickets/:id" element={<TicketDetail />} />
+
+      </Route>
+
+      {/* 3. Ruta de error (Redirige al inicio) */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

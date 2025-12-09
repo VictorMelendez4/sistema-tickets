@@ -1,53 +1,91 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 import { api } from "../api/axios";
 
+// 1. Exportamos el Contexto
 export const AuthContext = createContext();
 
+// 2. Exportamos el Hook personalizado
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth debe usarse dentro de un AuthProvider");
+  }
+  return context;
+};
+
+// 3. El Provider
 export function AuthProvider({ children }) {
-  const [usuario, setUsuario] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Función interna para guardar datos en LocalStorage y Estado
-  const setAuthData = (user, token) => {
-    setUsuario(user);
+  // --- FUNCIÓN QUE TE FALTABA ---
+  // Esta función permite guardar la sesión manualmente (ej. tras registro)
+  const setAuthData = (userData, token) => {
     localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("user", JSON.stringify(userData));
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    setUser(userData);
+    setIsAuthenticated(true);
   };
+  // -----------------------------
 
-  // Restaurar sesión del localStorage al cargar la app
+  // Cargar sesión al iniciar la app
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+    async function checkLogin() {
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
-    if (token && storedUser) {
-      // Restauramos el token en axios para que las peticiones funcionen
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      setUsuario(JSON.parse(storedUser));
+      if (!token || !storedUser) {
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Opcional: Verificar token con backend aquí.
+        // Por ahora confiamos en localStorage para rapidez.
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        setUser(JSON.parse(storedUser));
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error(error);
+        setIsAuthenticated(false);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     }
-
-    setLoading(false);
+    checkLogin();
   }, []);
 
-  // ---- LOGIN (Hace la petición a la API) ----
-  async function login(email, password) {
-    // 1. Hacemos la petición
+  // Función de Login normal
+  const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
-    
-    // 2. Usamos nuestra función auxiliar para guardar
-    setAuthData(data.user, data.token);
-  }
+    setAuthData(data.user, data.token); // Reutilizamos la función interna
+    return data; // Devolvemos data por si el componente la necesita
+  };
 
-  // ---- LOGOUT ----
-  function logout() {
-    setUsuario(null);
+  // Función de Logout
+  const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     delete api.defaults.headers.common["Authorization"];
-  }
+    setUser(null);
+    setIsAuthenticated(false);
+  };
 
   return (
-    <AuthContext.Provider value={{ usuario, login, logout, setAuthData, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        isAuthenticated,
+        loading,
+        setAuthData, // <--- ¡AQUÍ ESTABA EL ERROR! Faltaba exportar esto
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

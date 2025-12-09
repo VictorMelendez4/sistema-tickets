@@ -1,12 +1,14 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/axios";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext"; // 👈 Solo importamos el hook
 import toast from 'react-hot-toast';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { setAuthData } = useContext(AuthContext); // Usamos el helper del contexto
+  
+  // 👇 Usamos el hook para sacar la función setAuthData
+  const { setAuthData } = useAuth(); 
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -27,15 +29,16 @@ export default function Register() {
       
       // 2. Si sale bien, iniciamos sesión automático
       if (data.token) {
-        // Guardamos sesión usando la función del AuthContext (si la tienes implementada así)
-        // Ojo: Si tu AuthContext no expone 'setAuthData', usa login normal o redirige a login.
-        // Asumimos que el backend devuelve token y user.
-       toast.success("¡Cuenta creada! Por favor inicia sesión.");
-        navigate("/login");
+        // Usamos la función que nos dio el hook useAuth()
+        setAuthData(data.user, data.token);
+        
+        toast.success("¡Cuenta creada! Bienvenido.");
+        navigate("/"); // Vamos al Dashboard
       }
     } catch (error) {
       console.error(error);
-     toast.success(error.response?.data?.msg || "Error al registrarse");
+      const msg = error.response?.data?.message || error.response?.data?.msg || "Error al registrarse";
+      toast.error(msg);
     }
   };
 
@@ -46,46 +49,51 @@ export default function Register() {
         <div className="col-lg-5 d-none d-lg-block auth-bg-image" 
              style={{ 
                backgroundImage: "url('https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop')",
-               backgroundSize: 'cover' 
+               backgroundSize: 'cover',
+               backgroundPosition: 'center'
              }}>
+             <div className="auth-overlay" style={{backgroundColor: 'rgba(0,0,0,0.2)'}}></div>
         </div>
 
         {/* DERECHA: FORMULARIO */}
         <div className="col-lg-7 d-flex flex-column justify-content-center px-5 py-5">
           <div className="mx-auto w-100" style={{ maxWidth: "500px" }}>
-            <h2 className="fw-bold display-6 mb-2">Crear Cuenta</h2>
-            <p className="text-muted mb-4">Regístrate para enviar tickets de soporte.</p>
+            
+            <div className="mb-4">
+               <h2 className="fw-bold display-6 mb-2">Crear Cuenta</h2>
+               <p className="text-muted">Regístrate para enviar tickets de soporte.</p>
+            </div>
 
             <form onSubmit={handleSubmit}>
               <div className="row">
                 <div className="col-md-6 mb-3">
-                  <label className="form-label small text-muted">NOMBRE</label>
+                  <label className="form-label small fw-bold text-muted" style={{fontSize: '0.75rem'}}>NOMBRE</label>
                   <input type="text" name="firstName" className="form-control py-2" required onChange={handleChange} />
                 </div>
                 <div className="col-md-6 mb-3">
-                  <label className="form-label small text-muted">APELLIDO</label>
+                  <label className="form-label small fw-bold text-muted" style={{fontSize: '0.75rem'}}>APELLIDO</label>
                   <input type="text" name="lastName" className="form-control py-2" required onChange={handleChange} />
                 </div>
               </div>
 
               <div className="mb-3">
-                <label className="form-label small text-muted">CORREO</label>
+                <label className="form-label small fw-bold text-muted" style={{fontSize: '0.75rem'}}>CORREO</label>
                 <input type="email" name="email" className="form-control py-2" required onChange={handleChange} />
               </div>
 
               <div className="mb-4">
-                <label className="form-label small text-muted">CONTRASEÑA</label>
+                <label className="form-label small fw-bold text-muted" style={{fontSize: '0.75rem'}}>CONTRASEÑA</label>
                 <input type="password" name="password" className="form-control py-2" required onChange={handleChange} />
               </div>
 
-              <button type="submit" className="btn btn-primary w-100 py-3 fw-bold">
+              <button type="submit" className="btn btn-primary w-100 py-3 fw-bold shadow-sm">
                 Registrarse
               </button>
             </form>
 
-            <div className="mt-4 text-center">
+            <div className="mt-4 text-center border-top pt-4">
               <p className="text-muted">
-                ¿Ya tienes cuenta? <Link to="/login" className="text-primary fw-bold">Inicia Sesión</Link>
+                ¿Ya tienes cuenta? <Link to="/login" className="text-primary fw-bold text-decoration-none">Inicia Sesión</Link>
               </p>
             </div>
           </div>
