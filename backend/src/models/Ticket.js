@@ -4,7 +4,7 @@ const TicketSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },
-    category: {
+    department: {
       type: String,
       enum: ["HARDWARE", "SOFTWARE", "REDES", "OTROS"],
       required: true,

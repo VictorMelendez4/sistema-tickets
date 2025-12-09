@@ -2,15 +2,19 @@ import { Router } from "express";
 import {
   register,
   login,
+  getSupportAgents,
+  createStaff 
 } from "../controllers/auth.controller.js";
 import { auth } from "../middlewares/auth.js";
 
 const router = Router();
 
-router.post("/register", register);
+// Rutas Públicas
 router.post("/login", login);
+router.post("/register", register);
+
+// Rutas Protegidas (Requieren Token)
 router.get("/support-agents", auth, getSupportAgents);
-// Si luego quieres un /profile, lo implementamos bien en el controlador;
-// por ahora lo quitamos porque no existe y truena.
+router.post("/create-staff", auth, createStaff); 
 
 export default router;

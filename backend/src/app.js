@@ -4,31 +4,50 @@ import morgan from "morgan";
 import authRoutes from "./routes/auth.routes.js";
 import ticketRoutes from "./routes/ticket.routes.js";
 import commentRoutes from "./routes/comment.routes.js";
-import mongoSanitize from "express-mongo-sanitize";
+// import mongoSanitize from "express-mongo-sanitize"; // Mantenlo comentado por ahora
 import rateLimit from "express-rate-limit";
 
 const app = express();
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: "Demasiadas peticiones desde esta IP, intenta de nuevo en 15 minutos.",
-});
-app.use("/api/", limiter);
+// ==========================================
+// 1. CORS (EL PORTERO) - ¡VA PRIMERO!
+// ==========================================
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",       // Frontend Local
+      "http://127.0.0.1:5173",       // Frontend Local (Variante)
+      "http://159.54.142.179"        // Servidor Producción
+    ],
+    credentials: true,               // Permite cookies/tokens
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
 
-// Sanitización
-app.use(mongoSanitize());
-
-app.use(cors());
+// ==========================================
+// 2. CONFIGURACIONES BÁSICAS
+// ==========================================
 app.use(express.json());
 app.use(morgan("dev"));
 
+// Rate limiting (Opcional, mantenlo si quieres)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Demasiadas peticiones desde esta IP.",
+});
+app.use("/api/", limiter);
+
+// app.use(mongoSanitize()); // Comentado para evitar errores de versión
+
 app.get("/", (req, res) => {
-  res.json({ msg: "School API OK" });
+  res.json({ msg: "API Funcionando 🚀" });
 });
 
-// Rutas principales
+// ==========================================
+// 3. RUTAS
+// ==========================================
 app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/comments", commentRoutes);

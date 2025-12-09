@@ -1,16 +1,18 @@
 import { Ticket } from "../models/Ticket.js";
+import { User } from "../models/User.js"; // Necesitamos importar User para ver el depto del agente
 
 // Crear un ticket (Solo CLIENT)
 export async function createTicket(req, res) {
   try {
-    const { title, description, category, priority } = req.body;
+    // Recibimos 'department' en lugar de 'category'
+    const { title, description, department, priority } = req.body;
 
     const ticket = await Ticket.create({
       title,
       description,
-      category,
+      department, // Guardamos el departamento destino
       priority,
-      createdBy: req.user.id, // viene del token
+      createdBy: req.user.id,
     });
 
     res.status(201).json(ticket);
@@ -20,20 +22,37 @@ export async function createTicket(req, res) {
   }
 }
 
-// Obtener mis tickets (CLIENT) o todos (ADMIN/SUPPORT)
+// Obtener tickets con FILTRO INTELIGENTE
 export async function getTickets(req, res) {
   try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
     let filtro = {};
 
-    // Si NO es soporte ni admin, solo ve sus propios tickets
-    if (req.user.role === "CLIENT") {
-      filtro.createdBy = req.user.id;
+    // 1. Si es CLIENTE: Solo ve los suyos
+    if (userRole === "CLIENT") {
+      filtro.createdBy = userId;
     }
+    // 2. Si es SOPORTE: Ve los suyos + los vacíos de su departamento
+    else if (userRole === "SUPPORT") {
+      // Primero buscamos al usuario en la BD para saber su departamento real
+      const agent = await User.findById(userId);
+      const myDept = agent.department || "SOPORTE GENERAL";
+
+      filtro = {
+        $or: [
+          { assignedTo: userId },             // 1. Los que ya tomé
+          { assignedTo: null, department: myDept } // 2. Los libres de mi área
+        ]
+      };
+    }
+    // 3. Si es ADMIN: El filtro se queda vacío {} y ve TODO.
 
     const tickets = await Ticket.find(filtro)
       .populate("createdBy", "firstName lastName email")
       .populate("assignedTo", "firstName lastName email")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 }); // Los más nuevos primero
 
     res.json(tickets);
   } catch (err) {
@@ -42,7 +61,7 @@ export async function getTickets(req, res) {
   }
 }
 
-// Actualizar ticket (Asignar, cambiar estado, resolver)
+// Actualizar ticket
 export async function updateTicket(req, res) {
   try {
     const ticket = await Ticket.findByIdAndUpdate(req.params.id, req.body, {
@@ -56,7 +75,7 @@ export async function updateTicket(req, res) {
   }
 }
 
-// Obtener un solo ticket por ID (con historial de comentarios)
+// Obtener un solo ticket
 export async function getTicket(req, res) {
   try {
     const ticket = await Ticket.findById(req.params.id)
@@ -64,20 +83,14 @@ export async function getTicket(req, res) {
       .populate("assignedTo", "email firstName lastName")
       .populate({
         path: "comments",
-        options: { sort: { createdAt: 1 } }, // comentarios más viejos primero
-        populate: {
-          path: "author",
-          select: "firstName lastName email role",
-        },
+        options: { sort: { createdAt: 1 } },
+        populate: { path: "author", select: "firstName lastName email role" },
       });
 
-    if (!ticket) {
-      return res.status(404).json({ msg: "Ticket no encontrado" });
-    }
-
+    if (!ticket) return res.status(404).json({ msg: "Ticket no encontrado" });
     res.json(ticket);
   } catch (err) {
-    console.error("Error obteniendo ticket:", err);
+    console.error(err);
     res.status(500).json({ msg: "Error obteniendo ticket" });
   }
 }

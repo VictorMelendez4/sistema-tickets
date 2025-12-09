@@ -13,46 +13,49 @@ export default function TicketDetail() {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  
+  // ESTADOS NUEVOS PARA ADMIN
+  const [agents, setAgents] = useState([]); // Aquí guardaremos la lista de usuarios
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  // 1. Cargar Ticket (Sin cargar agentes para evitar error 404)
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // 1. Cargar Ticket
         const { data } = await api.get(`/tickets/${id}`);
         setTicket(data);
         setComments(data.comments || []);
+
+        // 2. Si soy Admin o Soporte, cargo la lista de agentes
+        if (user.role === "ADMIN" || user.role === "SUPPORT") {
+          const agentsRes = await api.get("/auth/support-agents");
+          setAgents(agentsRes.data);
+        }
       } catch (error) {
-        toast.error("Error cargando ticket");
+        toast.error("Error cargando información");
         navigate("/tickets");
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [id, navigate]);
+  }, [id, navigate, user]);
 
-  // 2. Función para CAMBIAR EL ESTATUS
-  const handleChangeStatus = async (e) => {
-    const newStatus = e.target.value;
-    setUpdating(true);
-
+  // Función genérica para actualizar (Estado o Asignado)
+  const handleUpdate = async (field, value) => {
+    setIsUpdating(true);
     try {
-      // Enviamos solo el estatus nuevo
-      const { data } = await api.put(`/tickets/${id}`, { status: newStatus });
-      
-      // Actualizamos la vista
-      setTicket(data);
-      toast.success(`Estatus cambiado a: ${newStatus}`);
+      // Enviamos dinámicamente el campo que cambió
+      const { data } = await api.put(`/tickets/${id}`, { [field]: value });
+      setTicket(data); 
+      toast.success("Ticket actualizado correctamente");
     } catch (error) {
-      console.error(error);
-      toast.error("No se pudo actualizar el estatus");
+      toast.error("No se pudo actualizar");
     } finally {
-      setUpdating(false);
+      setIsUpdating(false);
     }
   };
 
-  // Función de Chat
   const handleSendComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -61,7 +64,7 @@ export default function TicketDetail() {
       const visualComment = { ...data, author: data.author || user };
       setComments([...comments, visualComment]);
       setNewComment("");
-      toast.success("Mensaje enviado");
+      toast.success("Respuesta enviada");
     } catch (error) {
       toast.error("Error al enviar");
     }
@@ -74,27 +77,28 @@ export default function TicketDetail() {
 
   return (
     <div className="container-fluid py-4" style={{ maxWidth: "1200px" }}>
-      
       <button onClick={() => navigate(-1)} className="btn btn-link text-decoration-none ps-0 mb-3">
         <i className="bi bi-arrow-left"></i> Volver
       </button>
 
       <div className="row g-4">
-        
-        {/* COLUMNA IZQUIERDA: INFO Y CHAT */}
+        {/* IZQUIERDA: INFO Y CHAT */}
         <div className="col-lg-8">
           <div className="card shadow-sm border-0 mb-4">
             <div className="card-body">
-              <h2 className="fw-bold mb-2">{ticket.title}</h2>
-              <span className={`badge ${ticket.priority === 'CRITICA' ? 'bg-danger' : 'bg-warning text-dark'}`}>
-                Prioridad: {ticket.priority}
-              </span>
-              <hr />
-              <p className="mb-0" style={{ whiteSpace: "pre-wrap" }}>{ticket.description}</p>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h2 className="fw-bold mb-0">{ticket.title}</h2>
+                <span className={`badge ${ticket.status === 'ABIERTO' ? 'bg-success' : 'bg-secondary'}`}>
+                  {ticket.status}
+                </span>
+              </div>
+              <div className="bg-light p-3 rounded border mb-3">
+                <h6 className="fw-bold text-secondary small">DESCRIPCIÓN</h6>
+                <p className="mb-0" style={{ whiteSpace: "pre-wrap" }}>{ticket.description}</p>
+              </div>
             </div>
           </div>
 
-          {/* CHAT */}
           <div className="card shadow-sm border-0">
             <div className="card-header bg-white fw-bold"><i className="bi bi-chat-dots"></i> Historial</div>
             <div className="card-body bg-light" style={{ maxHeight: "500px", overflowY: "auto" }}>
@@ -111,53 +115,70 @@ export default function TicketDetail() {
             </div>
             <div className="card-footer bg-white p-2">
               <form onSubmit={handleSendComment} className="input-group">
-                <input className="form-control" placeholder="Respuesta..." value={newComment} onChange={e=>setNewComment(e.target.value)}/>
+                <input className="form-control" placeholder="Escribir respuesta..." value={newComment} onChange={e=>setNewComment(e.target.value)}/>
                 <button className="btn btn-primary"><i className="bi bi-send"></i></button>
               </form>
             </div>
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: GESTIÓN (AQUÍ ESTÁ EL CAMBIO) */}
+        {/* DERECHA: GESTIÓN (Solo Admin/Soporte) */}
         <div className="col-lg-4">
           <div className="card shadow-sm border-0">
             <div className="card-header bg-dark text-white fw-bold">
-              <i className="bi bi-gear-fill me-2"></i> Gestión
+              <i className="bi bi-tools me-2"></i> Gestión
             </div>
             <div className="card-body">
               
-              {/* SELECTOR DE ESTATUS (Solo para Admin/Soporte) */}
+              {/* CAMBIAR ESTADO */}
               <div className="mb-4">
-                <label className="form-label fw-bold small text-muted">ESTADO DEL TICKET</label>
-                
+                <label className="form-label fw-bold small text-muted">ESTADO</label>
                 {isAdmin ? (
                   <select 
-                    className="form-select form-select-lg fw-bold"
+                    className="form-select"
                     value={ticket.status}
-                    onChange={handleChangeStatus}
-                    disabled={updating}
-                    style={{ 
-                      borderColor: ticket.status === 'ABIERTO' ? '#198754' : '#6c757d',
-                      color: ticket.status === 'ABIERTO' ? '#198754' : '#000'
-                    }}
+                    disabled={isUpdating}
+                    onChange={(e) => handleUpdate("status", e.target.value)}
                   >
-                    <option value="ABIERTO">🟢 ABIERTO</option>
-                    <option value="EN_PROCESO">🟡 EN PROCESO</option>
-                    <option value="ESPERANDO_CLIENTE">🔵 ESPERANDO CLIENTE</option>
-                    <option value="RESUELTO">✅ RESUELTO</option>
-                    <option value="CERRADO">⚫ CERRADO</option>
+                    <option value="ABIERTO">🟢 Abierto</option>
+                    <option value="EN_PROCESO">🟡 En Proceso</option>
+                    <option value="RESUELTO">✅ Resuelto</option>
+                    <option value="CERRADO">⚫ Cerrado</option>
                   </select>
                 ) : (
-                  // Si es cliente, solo ve el estado, no lo cambia
-                  <div className="badge bg-secondary d-block p-2 fs-6">{ticket.status}</div>
+                  <div className="form-control bg-light">{ticket.status}</div>
+                )}
+              </div>
+
+              {/* CAMBIAR AGENTE (NUEVO) */}
+              <div className="mb-4">
+                <label className="form-label fw-bold small text-muted">ASIGNADO A</label>
+                {isAdmin ? (
+                  <select 
+                    className="form-select"
+                    value={ticket.assignedTo?._id || ""}
+                    disabled={isUpdating}
+                    onChange={(e) => handleUpdate("assignedTo", e.target.value)}
+                  >
+                    <option value="">-- Sin Asignar --</option>
+                    {/* Aquí pintamos la lista que viene del backend */}
+                    {agents.map(agent => (
+                      <option key={agent._id} value={agent._id}>
+                        {agent.firstName} {agent.lastName}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="form-control bg-light">
+                    {ticket.assignedTo ? ticket.assignedTo.firstName : "Sin asignar"}
+                  </div>
                 )}
               </div>
 
               <hr />
               <div className="small text-muted">
-                Solicitado por: <strong>{ticket.createdBy?.email}</strong>
+                Solicitante: <strong>{ticket.createdBy?.email}</strong>
               </div>
-
             </div>
           </div>
         </div>

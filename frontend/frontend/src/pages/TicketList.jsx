@@ -1,221 +1,157 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
-export default function TicketList() {
+// Recibimos 'viewType' desde el Router
+export default function TicketList({ viewType }) {
   const [tickets, setTickets] = useState([]);
-  const [selectedTicket, setSelectedTicket] = useState(null);
   const [loading, setLoading] = useState(true);
-  
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Cargar Tickets al iniciar
-// src/pages/TicketList.jsx
-
-useEffect(() => {
   const fetchTickets = async () => {
     try {
-      const endpoint = user.role === "CLIENT" ? "/tickets" : "/tickets"; // Ajusta si tienes rutas distintas
-      // Ojo: Tu backend usa /tickets para ambos, filtrando por token.
-      
+      setLoading(true); // Ponemos loading al cambiar de vista
       const { data } = await api.get("/tickets");
       setTickets(data);
-      setLoading(false);
     } catch (error) {
       console.error(error);
-      // Si el error es 401 (No autorizado), es normal que saque al login
-      if (error.response?.status === 401) {
-        // El interceptor de axios o el AuthContext deberían manejar esto,
-        // pero por si acaso:
-        toast.error("Sesión expirada");
-      } else {
-        toast.error("Error al cargar los tickets");
-      }
+    } finally {
       setLoading(false);
     }
   };
-  if (user) fetchTickets(); // Solo ejecutar si hay usuario
-}, [user]);
 
-  // Función para obtener color según el estado
-  const getStatusBadge = (status) => {
-    const colors = {
-      ABIERTO: "bg-success",
-      EN_PROCESO: "bg-warning text-dark",
-      ESPERANDO_CLIENTE: "bg-info text-dark",
-      RESUELTO: "bg-primary",
-      CERRADO: "bg-secondary",
-    };
-    return `badge ${colors[status] || "bg-secondary"}`;
+  // Recargar tickets si cambia la vista (ej. de Mis Casos a Bandeja)
+  useEffect(() => {
+    fetchTickets();
+  }, [viewType]);
+
+  const handleTakeTicket = async (ticketId) => {
+    try {
+      await api.put(`/tickets/${ticketId}`, { 
+        assignedTo: user.id,
+        status: "EN_PROCESO" 
+      });
+      toast.success("¡Caso asignado a ti!");
+      fetchTickets(); // Recargamos para que desaparezca de la lista actual
+    } catch (error) {
+      toast.error("No se pudo tomar el ticket");
+    }
   };
 
-  // Función para obtener color de prioridad
-  const getPriorityBadge = (priority) => {
-    return priority === "CRITICA" ? "text-danger fw-bold" : "text-dark";
-  };
+  if (loading) return <div className="p-5 text-center">Cargando...</div>;
 
-  return (
-    <div className="container-fluid" style={{ maxWidth: "1400px" }}>
-      
-      {/* Título Principal */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="fw-bold text-dark mb-0">
-            {user?.role === "CLIENT" ? "Mis Tickets" : "Centro de Soporte"}
-          </h2>
-          <p className="text-muted small">
-            {user?.role === "CLIENT" 
-              ? "Consulta el estado de tus solicitudes recientes."
-              : "Gestiona y asigna las incidencias pendientes."}
-          </p>
-        </div>
-      </div>
+  // === FILTRADO SEGÚN LA VISTA ===
+  let displayedTickets = [];
+  let title = "";
+  let icon = "";
+  let emptyMsg = "";
 
-      <div className="row g-4">
-        
-        {/* === COLUMNA IZQUIERDA: TABLA DE TICKETS === */}
-        <div className="col-lg-8">
-          <div className="card shadow-sm border-0">
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-hover mb-0 align-middle">
-                  <thead className="table-light">
-                    <tr>
-                      <th className="ps-4">Asunto</th>
-                      <th>Estado</th>
-                      <th>Prioridad</th>
-                      <th>Categoría</th>
-                      {user?.role !== "CLIENT" && <th>Solicitante</th>}
-                      <th>Fecha</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td colSpan="6" className="text-center py-5">Cargando...</td>
-                      </tr>
-                    ) : tickets.length === 0 ? (
-                      <tr>
-                        <td colSpan="6" className="text-center py-5 text-muted">
-                          No hay tickets registrados.
-                        </td>
-                      </tr>
-                    ) : (
-                      tickets.map((t) => (
-                        <tr 
-                          key={t._id} 
-                          onClick={() => setSelectedTicket(t)} 
-                          style={{ cursor: "pointer" }}
-                          className={selectedTicket?._id === t._id ? "table-active" : ""}
-                        >
-                          <td className="ps-4 fw-bold text-primary">
-                            {t.title}
-                          </td>
-                          <td>
-                            <span className={getStatusBadge(t.status)}>{t.status}</span>
-                          </td>
-                          <td>
-                            <span className={getPriorityBadge(t.priority)}>{t.priority}</span>
-                          </td>
-                          <td>
-                            <span className="badge bg-light text-dark border">{t.category}</span>
-                          </td>
-                          {user?.role !== "CLIENT" && (
-                            <td>
-                              <div className="d-flex align-items-center">
-                                <div className="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{width: 24, height: 24, fontSize: 10}}>
-                                  {t.createdBy?.firstName?.charAt(0)}
-                                </div>
-                                <small>{t.createdBy?.firstName}</small>
-                              </div>
-                            </td>
-                          )}
-                          <td className="text-muted small">
-                            {new Date(t.createdAt).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+  if (viewType === "AVAILABLE") {
+    // Solo los que NO tienen asignado (Bandeja de Entrada)
+    displayedTickets = tickets.filter(t => !t.assignedTo);
+    title = `Bandeja de Entrada: ${user.department || "General"}`;
+    icon = "bi-inbox";
+    emptyMsg = "No hay tickets nuevos en tu departamento.";
+  } 
+  else if (viewType === "MINE") {
+    // Solo los que TIENEN mi ID (Mis Casos)
+    displayedTickets = tickets.filter(t => t.assignedTo?._id === user.id);
+    title = "Mis Casos Activos";
+    icon = "bi-briefcase";
+    emptyMsg = "No tienes casos asignados. Ve a la Bandeja de Entrada para tomar uno.";
+  }
+  else {
+    // Vista CLIENTE (Mis tickets creados)
+    displayedTickets = tickets; // El backend ya filtra si eres cliente
+    title = "Mis Reportes";
+    icon = "bi-ticket-perforated";
+    emptyMsg = "No has creado reportes aún.";
+  }
+
+  // Tarjeta de Ticket
+  const TicketCard = ({ ticket }) => (
+    <div className="card shadow-sm mb-3 border-0 hover-shadow transition">
+      <div className="card-body">
+        <div className="d-flex justify-content-between align-items-start">
+          <div>
+            <h5 className="fw-bold mb-1">
+              <Link to={`/tickets/${ticket._id}`} className="text-decoration-none text-dark">
+                {ticket.title}
+              </Link>
+            </h5>
+            <div className="text-muted small mb-2">
+              <span className="badge bg-light text-dark border me-2">{ticket.department}</span>
+              <span className={`badge ${ticket.priority === 'CRITICA' ? 'bg-danger' : 'bg-warning text-dark'}`}>
+                {ticket.priority}
+              </span>
             </div>
           </div>
+          <span className={`badge ${ticket.status === 'ABIERTO' ? 'bg-success' : 'bg-secondary'}`}>
+            {ticket.status}
+          </span>
         </div>
+        
+        <p className="small text-secondary text-truncate mb-3" style={{maxWidth: "800px"}}>
+          {ticket.description}
+        </p>
+        
+        <div className="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
+          <small className="text-muted">
+            <i className="bi bi-person me-1"></i> 
+            Solicitante: <strong>{ticket.createdBy?.firstName || "Cliente"}</strong>
+          </small>
+          
+          {/* BOTÓN TOMAR CASO (Solo aparece en Bandeja de Entrada) */}
+          {viewType === "AVAILABLE" && (
+            <button 
+              onClick={() => handleTakeTicket(ticket._id)}
+              className="btn btn-sm btn-primary fw-bold"
+            >
+              ✋ Tomar Caso
+            </button>
+          )}
 
-        {/* === COLUMNA DERECHA: VISTA PREVIA Y ACCIÓN === */}
-        <div className="col-lg-4">
-          {selectedTicket ? (
-            <div className="card shadow-sm border-0 sticky-top" style={{ top: "20px" }}>
-              <div className="card-header bg-white py-3 border-bottom">
-                <h5 className="mb-0 fw-bold">Vista Rápida</h5>
-              </div>
-              <div className="card-body">
-                
-                {/* Info Clave */}
-                <h4 className="card-title fw-bold mb-3">{selectedTicket.title}</h4>
-                <div className="d-flex gap-2 mb-3">
-                  <span className={getStatusBadge(selectedTicket.status)}>
-                    {selectedTicket.status}
-                  </span>
-                  <span className="badge bg-light text-dark border">
-                    {selectedTicket.category}
-                  </span>
-                </div>
+          {/* BOTÓN VER DETALLES (Aparece en Mis Casos o Cliente) */}
+          {viewType !== "AVAILABLE" && (
+             <Link to={`/tickets/${ticket._id}`} className="btn btn-sm btn-outline-secondary">
+                Ver Detalles <i className="bi bi-arrow-right ms-1"></i>
+             </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
-                <div className="bg-light p-3 rounded mb-4">
-                  <h6 className="fw-bold text-muted small text-uppercase">Descripción</h6>
-                  <p className="mb-0 small text-dark" style={{ whiteSpace: "pre-wrap" }}>
-                    {selectedTicket.description.length > 150 
-                      ? selectedTicket.description.substring(0, 150) + "..." 
-                      : selectedTicket.description}
-                  </p>
-                </div>
+  return (
+    <div className="container-fluid" style={{ maxWidth: "1000px" }}>
+      
+      {/* CABECERA */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="fw-bold text-dark mb-0">
+          <i className={`bi ${icon} me-2 text-primary`}></i> {title}
+        </h2>
+        <span className="badge bg-secondary rounded-pill fs-6">
+          {displayedTickets.length}
+        </span>
+      </div>
 
-                {/* Info Adicional */}
-                <ul className="list-group list-group-flush mb-4 small">
-                  <li className="list-group-item d-flex justify-content-between px-0">
-                    <span className="text-muted">ID Ticket:</span>
-                    <span className="font-monospace">#{selectedTicket._id.slice(-6)}</span>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between px-0">
-                    <span className="text-muted">Solicitante:</span>
-                    <span className="fw-bold">{selectedTicket.createdBy?.email}</span>
-                  </li>
-                  <li className="list-group-item d-flex justify-content-between px-0">
-                    <span className="text-muted">Asignado a:</span>
-                    <span>{selectedTicket.assignedTo ? selectedTicket.assignedTo.firstName : "Sin asignar"}</span>
-                  </li>
-                </ul>
-
-                {/* BOTÓN DE ACCIÓN PRINCIPAL */}
-                <div className="d-grid">
-                  <button 
-                    onClick={() => navigate(`/tickets/${selectedTicket._id}`)} 
-                    className="btn btn-primary py-2 fw-bold"
-                  >
-                    <i className="bi bi-box-arrow-up-right me-2"></i>
-                    Abrir Ticket y Chat
-                  </button>
-                </div>
-
-              </div>
-            </div>
+      {/* LISTA */}
+      <div className="row">
+        <div className="col-12">
+          {displayedTickets.length > 0 ? (
+             displayedTickets.map(t => <TicketCard key={t._id} ticket={t} />)
           ) : (
-            /* Placeholder cuando no hay selección */
-            <div className="card border-0 bg-light border-dashed text-center py-5">
-              <div className="card-body text-muted">
-                <i className="bi bi-cursor-fill display-4 mb-3 opacity-25"></i>
-                <h5>Selecciona un ticket</h5>
-                <p className="small">Haz clic en una fila de la izquierda para ver los detalles y acceder al chat.</p>
+            <div className="card border-0 bg-light text-center py-5">
+              <div className="card-body">
+                <i className={`bi ${icon} display-1 text-muted opacity-25 mb-3`}></i>
+                <h4 className="text-muted">{emptyMsg}</h4>
               </div>
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

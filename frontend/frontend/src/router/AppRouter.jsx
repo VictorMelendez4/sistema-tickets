@@ -6,12 +6,13 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 import TicketForm from "../pages/TicketForm"; 
 import TicketDetail from "../pages/TicketDetail"; 
+import CreateSupport from "../pages/CreateSupport"; // <--- NUEVA PÁGINA
 import Layout from "../components/Layout";
 
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) return <div className="p-5 text-center">Cargando sistema...</div>;
+  if (loading) return <div className="d-flex justify-content-center align-items-center vh-100">Cargando sistema...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
   return children;
@@ -22,41 +23,31 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      {/* 1. RUTAS PÚBLICAS */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/registro" element={<Register />} />
+      {/* ... rutas públicas ... */}
 
-      {/* 2. RUTAS PROTEGIDAS (Dentro del Layout) */}
-      <Route
-        element={
-          <PrivateRoute>
-            <Layout />
-          </PrivateRoute>
-        }
-      >
-        {/* Dashboard Principal */}
+      <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
+        
+        {/* Dashboard */}
         <Route path="/" element={<Dashboard />} />
 
-        {/* --- RUTAS DE TICKETS --- */}
-        
-        {/* Para el Cliente: "Mis Tickets" */}
-        <Route path="/mis-tickets" element={<TicketList />} />
-        
-        {/* Para el Cliente: "Nuevo Ticket" */}
+        {/* --- RUTAS DE CLIENTE --- */}
         <Route path="/nuevo-ticket" element={<TicketForm />} />
+        <Route path="/mis-tickets" element={<TicketList viewType="CLIENT" />} />
 
-        {/* Para Admin/Soporte: "Bandeja de Entrada" */}
-        <Route path="/gestion-tickets" element={<TicketList />} />
+        {/* --- RUTAS DE SOPORTE / ADMIN --- */}
+        {/* Aquí reciclamos TicketList pero le decimos qué mostrar */}
         
-        {/* Ruta genérica por si acaso */}
-        <Route path="/tickets" element={<TicketList />} />
-
-        {/* Detalle del Ticket (Para todos) */}
+        <Route path="/bandeja-entrada" element={<TicketList viewType="AVAILABLE" />} />
+        
+        <Route path="/mis-casos" element={<TicketList viewType="MINE" />} />
+        
+        {/* --- DETALLE Y ALTA --- */}
         <Route path="/tickets/:id" element={<TicketDetail />} />
+        {user?.role === "ADMIN" && (
+           <Route path="/crear-staff" element={<CreateSupport />} />
+        )}
 
       </Route>
-
-      {/* 3. Ruta de error (Redirige al inicio) */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

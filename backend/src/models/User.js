@@ -8,9 +8,15 @@ const UserSchema = new mongoose.Schema(
     lastName: { type: String, required: true },
     role: {
       type: String,
-      enum: ["ADMIN", "SUPPORT", "CLIENT"], // Nuevos roles
+      enum: ["ADMIN", "SUPPORT", "CLIENT"],
       default: "CLIENT",
     },
+    
+    department: {
+      type: String,
+      enum: ["SOPORTE GENERAL", "REDES", "HARDWARE", "SOFTWARE", "ADMINISTRACION"],
+      default: "SOPORTE GENERAL"
+    }
   },
   { timestamps: true }
 );
