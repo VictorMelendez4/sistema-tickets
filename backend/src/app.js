@@ -6,6 +6,7 @@ import ticketRoutes from "./routes/ticket.routes.js";
 import commentRoutes from "./routes/comment.routes.js";
 // import mongoSanitize from "express-mongo-sanitize"; // Mantenlo comentado por ahora
 import rateLimit from "express-rate-limit";
+import userRoutes from "./routes/user.routes.js";
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.get("/", (req, res) => {
 // 3. RUTAS
 // ==========================================
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/comments", commentRoutes);
 

@@ -4,14 +4,24 @@ import { User } from "../models/User.js"; // Necesitamos importar User para ver 
 // Crear un ticket (Solo CLIENT)
 export async function createTicket(req, res) {
   try {
-    // Recibimos 'department' en lugar de 'category'
-    const { title, description, department, priority } = req.body;
+    let { title, description, department, priority } = req.body;
+
+    // --- 🤖 LÓGICA DE PRIORIDAD AUTOMÁTICA ---
+    const textoCompleto = (title + " " + description).toLowerCase();
+    
+    // Palabras clave para urgencia
+    if (textoCompleto.includes("fuego") || textoCompleto.includes("humo") || textoCompleto.includes("servidor caído")) {
+        priority = "CRITICA";
+    } else if (textoCompleto.includes("urgente") || textoCompleto.includes("error") || textoCompleto.includes("fallo")) {
+        priority = "ALTA";
+    }
+    // ------------------------------------------
 
     const ticket = await Ticket.create({
       title,
       description,
-      department, // Guardamos el departamento destino
-      priority,
+      department,
+      priority, // Se guarda la prioridad calculada o la manual
       createdBy: req.user.id,
     });
 
@@ -92,5 +102,17 @@ export async function getTicket(req, res) {
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Error obteniendo ticket" });
+  }
+}
+
+// Eliminar ticket (Solo Admin)
+export async function deleteTicket(req, res) {
+  try {
+    const ticket = await Ticket.findByIdAndDelete(req.params.id);
+    if (!ticket) return res.status(404).json({ msg: "Ticket no encontrado" });
+    res.json({ msg: "Ticket eliminado correctamente" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Error eliminando ticket" });
   }
 }

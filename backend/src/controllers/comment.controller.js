@@ -3,8 +3,9 @@ import { Ticket } from "../models/Ticket.js";
 
 export const addComment = async (req, res) => {
   try {
-    const { content, ticketId } = req.body;
+    const { content, ticketId, isInternal } = req.body;
 
+    // Validación básica
     if (!content || !ticketId) {
       return res.status(400).json({ msg: "Faltan datos requeridos" });
     }
@@ -19,23 +20,24 @@ export const addComment = async (req, res) => {
     const newComment = new Comment({
       content,
       ticket: ticketId,
-      author: req.user.id   //  mismo que usas en createTicket
+      author: req.user.id, // Esto falla si falta el middleware 'auth' en la ruta
+      isInternal: isInternal || false
     });
 
     const savedComment = await newComment.save();
 
-    // Agregar referencia del comentario al ticket
+    // Agregar referencia al ticket
     ticket.comments.push(savedComment._id);
     await ticket.save();
 
-    // Devolver el comentario con los datos del autor
+    // Poblar datos del autor para devolverlo al frontend
     const populatedComment = await Comment.findById(savedComment._id)
       .populate("author", "firstName lastName email role");
 
     res.status(201).json(populatedComment);
 
   } catch (error) {
-    console.error("Error al crear comentario:", error);
+    console.error("Error al crear comentario:", error); // <--- Mira tu terminal backend para ver este error
     res.status(500).json({ msg: "Error al crear comentario" });
   }
 };

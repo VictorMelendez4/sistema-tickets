@@ -7,23 +7,24 @@ import Register from "../pages/Register";
 import TicketForm from "../pages/TicketForm"; 
 import TicketDetail from "../pages/TicketDetail"; 
 import CreateSupport from "../pages/CreateSupport"; 
+import UserList from "../pages/UserList"; // <--- IMPORTANTE: Importar la nueva página
 import Layout from "../components/Layout";
 
-// COMPONENTE PROTECTOR MEJORADO
+// COMPONENTE PROTECTOR MEJORADO (Sin bucles infinitos)
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
-  // 1. Si estamos verificando sesión, mostramos un spinner y NO hacemos nada más.
+  // 1. Si estamos verificando sesión, mostramos un spinner y NO redirigimos aún.
   if (loading) {
     return <div className="d-flex justify-content-center align-items-center vh-100">Cargando sistema...</div>;
   }
 
-  // 2. Si terminó de cargar y NO hay usuario, entonces sí redirigimos.
+  // 2. Si terminó de cargar y NO hay usuario, entonces sí redirigimos al login.
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // 3. Si todo bien, mostramos la app.
+  // 3. Si todo bien, mostramos la app protegida.
   return children;
 }
 
@@ -32,34 +33,38 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      {/* 1. RUTAS PÚBLICAS */}
+      {/* === 1. RUTAS PÚBLICAS === */}
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Register />} />
 
-      {/* 2. RUTAS PROTEGIDAS */}
+      {/* === 2. RUTAS PROTEGIDAS (Con Layout) === */}
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         
-        {/* Dashboard */}
+        {/* Dashboard General */}
         <Route path="/" element={<Dashboard />} />
 
-        {/* --- CLIENTE --- */}
+        {/* --- RUTAS DE CLIENTE --- */}
         <Route path="/nuevo-ticket" element={<TicketForm />} />
         <Route path="/mis-tickets" element={<TicketList viewType="CLIENT" />} />
 
-        {/* --- SOPORTE / ADMIN --- */}
+        {/* --- RUTAS DE SOPORTE / ADMIN --- */}
         <Route path="/bandeja-entrada" element={<TicketList viewType="AVAILABLE" />} />
         <Route path="/mis-casos" element={<TicketList viewType="MINE" />} />
         
-        {/* --- DETALLES Y ADMIN --- */}
+        {/* --- DETALLES DE TICKET (Para todos) --- */}
         <Route path="/tickets/:id" element={<TicketDetail />} />
         
+        {/* --- SOLO ADMIN --- */}
         {user?.role === "ADMIN" && (
-           <Route path="/crear-staff" element={<CreateSupport />} />
+           <>
+             <Route path="/crear-staff" element={<CreateSupport />} />
+             <Route path="/usuarios" element={<UserList />} /> {/* <--- NUEVA RUTA DE GESTIÓN */}
+           </>
         )}
 
       </Route>
 
-      {/* 3. Ruta de descarte (Redirige al inicio) */}
+      {/* === 3. RUTA DE DESCARTE (Cualquier url rara va al inicio) === */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

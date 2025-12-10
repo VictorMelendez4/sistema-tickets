@@ -95,6 +95,10 @@ function Layout() {
               <NavLink to="/crear-staff" style={linkStyle}>
                 <span>👨‍💻</span> Alta de Personal
               </NavLink>
+
+              <NavLink to="/usuarios" style={linkStyle}>
+                <span>👥</span> Gestionar Usuarios
+              </NavLink>
               
               {/* Aquí podrás agregar más cosas a futuro, como: */}
               {/* <NavLink to="/reportes" style={linkStyle}>📊 Reportes</NavLink> */}

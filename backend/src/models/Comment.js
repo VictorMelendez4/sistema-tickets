@@ -17,7 +17,8 @@ const commentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
-  }
+  },
+  isInternal: { type: Boolean, default: false }
 }, {
   timestamps: true // Para tener createdAt y updatedAt
 });
