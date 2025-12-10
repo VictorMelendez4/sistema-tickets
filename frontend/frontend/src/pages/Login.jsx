@@ -56,7 +56,7 @@ export default function Login() {
             <div className="mb-4">
               <h2 className="fw-bold display-6 mb-2">¡Hola de nuevo!</h2>
               <p className="text-muted">
-                Bienvenido al portal de soporte. Ingresa tus credenciales para continuar.
+                Bienvenido al portal de soporte.. Ingresa tus credenciales para continuar.
               </p>
             </div>
 
