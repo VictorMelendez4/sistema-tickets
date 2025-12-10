@@ -4,11 +4,14 @@ const TicketSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },
+    
+    // Departamento
     department: {
       type: String,
-      enum: ["HARDWARE", "SOFTWARE", "REDES", "OTROS"],
+      enum: ["HARDWARE", "SOFTWARE", "REDES", "SOPORTE GENERAL"], 
       required: true,
     },
+    
     priority: {
       type: String,
       enum: ["BAJA", "MEDIA", "ALTA", "CRITICA"],
@@ -16,7 +19,7 @@ const TicketSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["ABIERTO", "EN_PROCESO", "RESUELTO", "CERRADO"],
+      enum: ["ABIERTO", "EN_PROCESO", "ESPERANDO_CLIENTE", "RESUELTO", "CERRADO"],
       default: "ABIERTO",
     },
     createdBy: { 
@@ -31,12 +34,21 @@ const TicketSchema = new mongoose.Schema(
     },
     solution: { type: String }, 
     
-    // --- NUEVO CAMPO: Historial de Comentarios ---
     comments: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Comment" 
-    }]
-    // ---------------------------------------------
+    }],
+
+    rating: { 
+      type: Number, 
+      min: 0, 
+      max: 5, 
+      default: 0 // 0 significa "No calificado"
+    },
+    feedback: { 
+      type: String, 
+      default: "" // Comentario opcional del cliente
+    }
   },
   { timestamps: true }
 );

@@ -14,26 +14,38 @@ export default function TicketDetail() {
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   
-  // ESTADOS NUEVOS PARA ADMIN
-  const [agents, setAgents] = useState([]); // Aquí guardaremos la lista de usuarios
+  // ESTADOS PARA ADMIN/SOPORTE
+  const [agents, setAgents] = useState([]); 
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // ESTADOS PARA CALIFICACIÓN
+  const [rating, setRating] = useState(0);
+  const [feedback, setFeedback] = useState("");
+  const [hoverRating, setHoverRating] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Cargar Ticket
         const { data } = await api.get(`/tickets/${id}`);
         setTicket(data);
         setComments(data.comments || []);
+        
+        // Cargar calificación si ya existe
+        if (data.rating) {
+            setRating(data.rating);
+            setFeedback(data.feedback);
+        }
 
-        // 2. Si soy Admin o Soporte, cargo la lista de agentes
+        // Si es Staff, cargar lista de agentes
         if (user.role === "ADMIN" || user.role === "SUPPORT") {
           const agentsRes = await api.get("/auth/support-agents");
           setAgents(agentsRes.data);
         }
       } catch (error) {
         toast.error("Error cargando información");
-        navigate("/tickets");
+        // 🛡️ PROTECCIÓN CONTRA BUCLE INFINITO:
+        // No redirigimos automáticamente si falla, solo quitamos el loading.
+        setLoading(false);
       } finally {
         setLoading(false);
       }
@@ -41,18 +53,32 @@ export default function TicketDetail() {
     fetchData();
   }, [id, navigate, user]);
 
-  // Función genérica para actualizar (Estado o Asignado)
   const handleUpdate = async (field, value) => {
     setIsUpdating(true);
     try {
-      // Enviamos dinámicamente el campo que cambió
       const { data } = await api.put(`/tickets/${id}`, { [field]: value });
-      setTicket(data); 
-      toast.success("Ticket actualizado correctamente");
+      setTicket(data);
+      toast.success("Ticket actualizado");
     } catch (error) {
       toast.error("No se pudo actualizar");
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // ENVIAR CALIFICACIÓN
+  const submitRating = async () => {
+    if (rating === 0) return toast.error("Selecciona al menos una estrella");
+    try {
+        const { data } = await api.put(`/tickets/${id}`, { 
+            rating, 
+            feedback,
+            status: "CERRADO" // Opcional: Cerrar definitivamente al calificar
+        });
+        setTicket(data);
+        toast.success("¡Gracias por calificar!");
+    } catch (error) {
+        toast.error("Error al enviar calificación");
     }
   };
 
@@ -71,9 +97,11 @@ export default function TicketDetail() {
   };
 
   if (loading) return <div className="p-5 text-center">Cargando...</div>;
-  if (!ticket) return null;
+  if (!ticket) return <div className="p-5 text-center">Ticket no encontrado</div>;
 
   const isAdmin = user.role === "ADMIN" || user.role === "SUPPORT";
+  // Mostrar votar SI: Es Cliente + Resuelto/Cerrado + No ha votado
+  const canRate = user.role === "CLIENT" && (ticket.status === "RESUELTO" || ticket.status === "CERRADO") && ticket.rating === 0;
 
   return (
     <div className="container-fluid py-4" style={{ maxWidth: "1200px" }}>
@@ -82,8 +110,10 @@ export default function TicketDetail() {
       </button>
 
       <div className="row g-4">
-        {/* IZQUIERDA: INFO Y CHAT */}
+        {/* IZQUIERDA */}
         <div className="col-lg-8">
+          
+          {/* TARJETA PRINCIPAL */}
           <div className="card shadow-sm border-0 mb-4">
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">
@@ -99,6 +129,58 @@ export default function TicketDetail() {
             </div>
           </div>
 
+          {/* === ZONA DE ESTRELLAS === */}
+          
+          {/* 1. Formulario para Votar (Solo Cliente) */}
+          {canRate && (
+            <div className="card shadow-sm border-0 mb-4 border-warning">
+                <div className="card-body text-center bg-white">
+                    <h5 className="fw-bold text-dark">¿Cómo calificarías la atención?</h5>
+                    <p className="text-muted small">Tu opinión es importante para nosotros.</p>
+                    
+                    <div className="mb-3">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <i 
+                                key={star}
+                                className={`bi ${star <= (hoverRating || rating) ? "bi-star-fill text-warning" : "bi-star text-secondary"} mx-1`}
+                                style={{ fontSize: "2rem", cursor: "pointer" }}
+                                onMouseEnter={() => setHoverRating(star)}
+                                onMouseLeave={() => setHoverRating(0)}
+                                onClick={() => setRating(star)}
+                            ></i>
+                        ))}
+                    </div>
+                    
+                    <textarea 
+                        className="form-control mb-3" 
+                        placeholder="Comentario opcional..."
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                    ></textarea>
+                    
+                    <button onClick={submitRating} className="btn btn-warning fw-bold text-dark px-4">
+                        Enviar Calificación
+                    </button>
+                </div>
+            </div>
+          )}
+
+          {/* 2. Resultado (Visible si ya votaron) */}
+          {ticket.rating > 0 && (
+             <div className="card shadow-sm border-0 mb-4 bg-success text-white">
+                <div className="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 className="fw-bold mb-1"><i className="bi bi-award-fill me-2"></i> Feedback del Cliente</h6>
+                        <p className="mb-0 fst-italic">"{ticket.feedback || "Sin comentarios"}"</p>
+                    </div>
+                    <div className="fs-3 text-warning">
+                        {"★".repeat(ticket.rating)}
+                    </div>
+                </div>
+             </div>
+          )}
+
+          {/* CHAT */}
           <div className="card shadow-sm border-0">
             <div className="card-header bg-white fw-bold"><i className="bi bi-chat-dots"></i> Historial</div>
             <div className="card-body bg-light" style={{ maxHeight: "500px", overflowY: "auto" }}>
@@ -113,6 +195,7 @@ export default function TicketDetail() {
                 </div>
               ))}
             </div>
+            
             <div className="card-footer bg-white p-2">
               <form onSubmit={handleSendComment} className="input-group">
                 <input className="form-control" placeholder="Escribir respuesta..." value={newComment} onChange={e=>setNewComment(e.target.value)}/>
@@ -122,7 +205,7 @@ export default function TicketDetail() {
           </div>
         </div>
 
-        {/* DERECHA: GESTIÓN (Solo Admin/Soporte) */}
+        {/* DERECHA: PANEL DE CONTROL */}
         <div className="col-lg-4">
           <div className="card shadow-sm border-0">
             <div className="card-header bg-dark text-white fw-bold">
@@ -130,7 +213,6 @@ export default function TicketDetail() {
             </div>
             <div className="card-body">
               
-              {/* CAMBIAR ESTADO */}
               <div className="mb-4">
                 <label className="form-label fw-bold small text-muted">ESTADO</label>
                 {isAdmin ? (
@@ -142,6 +224,7 @@ export default function TicketDetail() {
                   >
                     <option value="ABIERTO">🟢 Abierto</option>
                     <option value="EN_PROCESO">🟡 En Proceso</option>
+                    <option value="ESPERANDO_CLIENTE">🔵 Esperando Cliente</option>
                     <option value="RESUELTO">✅ Resuelto</option>
                     <option value="CERRADO">⚫ Cerrado</option>
                   </select>
@@ -150,7 +233,6 @@ export default function TicketDetail() {
                 )}
               </div>
 
-              {/* CAMBIAR AGENTE (NUEVO) */}
               <div className="mb-4">
                 <label className="form-label fw-bold small text-muted">ASIGNADO A</label>
                 {isAdmin ? (
@@ -161,11 +243,8 @@ export default function TicketDetail() {
                     onChange={(e) => handleUpdate("assignedTo", e.target.value)}
                   >
                     <option value="">-- Sin Asignar --</option>
-                    {/* Aquí pintamos la lista que viene del backend */}
-                    {agents.map(agent => (
-                      <option key={agent._id} value={agent._id}>
-                        {agent.firstName} {agent.lastName}
-                      </option>
+                    {agents.map(a => (
+                      <option key={a._id} value={a._id}>{a.firstName} {a.lastName}</option>
                     ))}
                   </select>
                 ) : (
@@ -174,7 +253,7 @@ export default function TicketDetail() {
                   </div>
                 )}
               </div>
-
+              
               <hr />
               <div className="small text-muted">
                 Solicitante: <strong>{ticket.createdBy?.email}</strong>
@@ -182,7 +261,6 @@ export default function TicketDetail() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
