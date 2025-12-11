@@ -3,7 +3,8 @@ import {
   register,
   login,
   getSupportAgents,
-  createStaff 
+  createStaff,
+  updatePassword 
 } from "../controllers/auth.controller.js";
 import { auth } from "../middlewares/auth.js";
 
@@ -16,5 +17,6 @@ router.post("/register", register);
 // Rutas Protegidas (Requieren Token)
 router.get("/support-agents", auth, getSupportAgents);
 router.post("/create-staff", auth, createStaff); 
+router.put("/profile/password", auth, updatePassword);
 
 export default router;

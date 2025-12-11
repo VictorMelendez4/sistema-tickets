@@ -4,85 +4,114 @@ import { api } from "../api/axios";
 import toast from "react-hot-toast";
 
 export default function TicketForm() {
-  const navigate = useNavigate();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [department, setDepartment] = useState("SOPORTE GENERAL");
+  const [priority, setPriority] = useState("BAJA");
+  const [file, setFile] = useState(null); // <--- ESTADO PARA EL ARCHIVO
   const [loading, setLoading] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    department: "HARDWARE", // Default coincidente con Backend
-    priority: "MEDIA",
-  });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.description.trim()) {
-      return toast.error("Completa los campos obligatorios");
-    }
-
     setLoading(true);
+
     try {
+      // ⚠️ IMPORTANTE: Usamos FormData para enviar archivos
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("department", department);
+      formData.append("priority", priority);
+      
+      if (file) {
+        formData.append("file", file); // El nombre "file" debe coincidir con el backend
+      }
+
+      // Axios detecta FormData y pone el header correcto automáticamente
       await api.post("/tickets", formData);
-      toast.success("¡Ticket creado exitosamente!");
-      navigate("/mis-tickets"); 
+      
+      toast.success("Ticket creado exitosamente");
+      navigate("/mis-tickets");
     } catch (error) {
-      console.error(error);
-      toast.error("Error al crear el ticket.");
+      toast.error("Error al crear el ticket");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container mt-4" style={{ maxWidth: "800px" }}>
+    <div className="container mt-4" style={{maxWidth: "700px"}}>
       <div className="card shadow-sm border-0">
-        <div className="card-header bg-primary text-white py-3">
-          <h4 className="mb-0 fw-bold"><i className="bi bi-pencil-square me-2"></i> Nuevo Reporte</h4>
+        <div className="card-header bg-primary text-white fw-bold">
+            <i className="bi bi-plus-circle me-2"></i> Nuevo Reporte
         </div>
-        
         <div className="card-body p-4">
           <form onSubmit={handleSubmit}>
             
+            <div className="mb-3">
+              <label className="form-label fw-bold">Asunto</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                placeholder="Ej: No tengo internet" 
+                value={title} 
+                onChange={(e) => setTitle(e.target.value)} 
+                required 
+              />
+            </div>
+
+            <div className="row">
+                <div className="col-md-6 mb-3">
+                    <label className="form-label fw-bold">Departamento</label>
+                    <select className="form-select" value={department} onChange={(e) => setDepartment(e.target.value)}>
+                        <option value="SOPORTE GENERAL">Soporte General</option>
+                        <option value="REDES">Redes e Internet</option>
+                        <option value="HARDWARE">Hardware (Equipos)</option>
+                        <option value="SOFTWARE">Software (Programas)</option>
+                    </select>
+                </div>
+                <div className="col-md-6 mb-3">
+                    <label className="form-label fw-bold">Prioridad</label>
+                    <select className="form-select" value={priority} onChange={(e) => setPriority(e.target.value)}>
+                        <option value="BAJA">🟢 Baja</option>
+                        <option value="MEDIA">🟡 Media</option>
+                        <option value="ALTA">🟠 Alta</option>
+                    </select>
+                </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label fw-bold">Descripción Detallada</label>
+              <textarea 
+                className="form-control" 
+                rows="4" 
+                value={description} 
+                onChange={(e) => setDescription(e.target.value)} 
+                required
+              ></textarea>
+            </div>
+
+            {/* INPUT DE ARCHIVO */}
             <div className="mb-4">
-              <label className="form-label fw-bold text-muted small">ASUNTO</label>
-              <input type="text" name="title" className="form-control form-control-lg" required value={formData.title} onChange={handleChange} autoFocus />
+                <label className="form-label fw-bold">Evidencia (Opcional)</label>
+                <input 
+                    type="file" 
+                    className="form-control" 
+                    accept="image/*, .pdf" // Acepta imagenes y PDF
+                    onChange={(e) => setFile(e.target.files[0])} 
+                />
+                <div className="form-text">Puedes subir capturas de pantalla o fotos del error.</div>
             </div>
 
-            <div className="row mb-4">
-              <div className="col-md-6">
-                <label className="form-label fw-bold text-muted small">DEPARTAMENTO / CATEGORÍA</label>
-                <select name="department" className="form-select" value={formData.department} onChange={handleChange}>
-                  <option value="HARDWARE">Hardware (Equipos físicos)</option>
-                  <option value="SOFTWARE">Software (Programas)</option>
-                  <option value="REDES">Redes e Internet</option>
-                  <option value="SOPORTE GENERAL">Soporte General / Otros</option>
-                </select>
-              </div>
-
-              <div className="col-md-6">
-                <label className="form-label fw-bold text-muted small">PRIORIDAD</label>
-                <select name="priority" className="form-select" value={formData.priority} onChange={handleChange}>
-                  <option value="BAJA">🟢 Baja</option>
-                  <option value="MEDIA">🟡 Media</option>
-                  <option value="ALTA">🟠 Alta</option>
-                  <option value="CRITICA">🔴 Crítica</option>
-                </select>
-              </div>
+            <div className="d-flex justify-content-end gap-2">
+                <button type="button" onClick={() => navigate(-1)} className="btn btn-secondary">Cancelar</button>
+                <button type="submit" className="btn btn-primary fw-bold" disabled={loading}>
+                    {loading ? "Enviando..." : "Crear Ticket"}
+                </button>
             </div>
 
-            <div className="mb-4">
-              <label className="form-label fw-bold text-muted small">DESCRIPCIÓN</label>
-              <textarea name="description" className="form-control" rows="5" required value={formData.description} onChange={handleChange}></textarea>
-            </div>
-
-            <div className="d-flex gap-2 justify-content-end">
-              <button type="button" onClick={() => navigate("/")} className="btn btn-outline-secondary px-4">Cancelar</button>
-              <button type="submit" className="btn btn-primary px-5 fw-bold" disabled={loading}>{loading ? "Enviando..." : "Enviar Ticket"}</button>
-            </div>
           </form>
         </div>
       </div>

@@ -4,34 +4,55 @@ import { User } from "../models/User.js"; // Necesitamos importar User para ver 
 // Crear un ticket (Solo CLIENT)
 export async function createTicket(req, res) {
   try {
-    let { title, description, department, priority } = req.body;
+    const { title, description, department, priority } = req.body;
 
-    // --- 🤖 LÓGICA DE PRIORIDAD AUTOMÁTICA ---
+    // 1. GESTIÓN DE ARCHIVO ADJUNTO (Multer)
+    // Si viene un archivo, guardamos la ruta. Si no, se queda en null.
+    // Nota: 'req.file' existe gracias al middleware upload.single("file") en la ruta
+    const attachment = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // 2. LÓGICA DE PRIORIDAD AUTOMÁTICA
+    // Analizamos el texto para detectar emergencias reales
+    let finalPriority = priority; // Empezamos con la que eligió el usuario
     const textoCompleto = (title + " " + description).toLowerCase();
-    
-    // Palabras clave para urgencia
-    if (textoCompleto.includes("fuego") || textoCompleto.includes("humo") || textoCompleto.includes("servidor caído")) {
-        priority = "CRITICA";
-    } else if (textoCompleto.includes("urgente") || textoCompleto.includes("error") || textoCompleto.includes("fallo")) {
-        priority = "ALTA";
-    }
-    // ------------------------------------------
 
+    // Nivel CRÍTICO (Palabras de pánico)
+    if (
+      textoCompleto.includes("fuego") || 
+      textoCompleto.includes("humo") || 
+      textoCompleto.includes("servidor caído") ||
+      textoCompleto.includes("hackeado")
+    ) {
+        finalPriority = "CRITICA";
+    } 
+    // Nivel ALTO (Palabras de urgencia)
+    else if (
+      textoCompleto.includes("urgente") || 
+      textoCompleto.includes("error critico") || 
+      textoCompleto.includes("fallo total") ||
+      textoCompleto.includes("sin sistema")
+    ) {
+        finalPriority = "ALTA";
+    }
+
+    // 3. CREAR EN BASE DE DATOS
     const ticket = await Ticket.create({
       title,
       description,
       department,
-      priority, // Se guarda la prioridad calculada o la manual
-      createdBy: req.user.id,
+      priority: finalPriority, // Usamos la prioridad calculada (o la original)
+      attachment,              // Guardamos la ruta de la imagen/archivo
+      createdBy: req.user.id,  // ID del usuario que está logueado
+      status: "ABIERTO"        // Estado inicial por defecto
     });
 
     res.status(201).json(ticket);
+
   } catch (err) {
     console.error("Error creando ticket:", err);
     res.status(500).json({ msg: "Error creando ticket" });
   }
 }
-
 // Obtener tickets con FILTRO INTELIGENTE
 export async function getTickets(req, res) {
   try {

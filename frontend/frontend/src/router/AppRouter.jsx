@@ -6,6 +6,7 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 import TicketForm from "../pages/TicketForm"; 
 import TicketDetail from "../pages/TicketDetail"; 
+import Profile from "../pages/Profile";
 import CreateSupport from "../pages/CreateSupport"; 
 import UserList from "../pages/UserList"; // <--- IMPORTANTE: Importar la nueva página
 import Layout from "../components/Layout";
@@ -43,6 +44,8 @@ export default function AppRouter() {
         {/* Dashboard General */}
         <Route path="/" element={<Dashboard />} />
 
+        <Route path="/perfil" element={<Profile />} />
+
         {/* --- RUTAS DE CLIENTE --- */}
         <Route path="/nuevo-ticket" element={<TicketForm />} />
         <Route path="/mis-tickets" element={<TicketList viewType="CLIENT" />} />
@@ -50,6 +53,7 @@ export default function AppRouter() {
         {/* --- RUTAS DE SOPORTE / ADMIN --- */}
         <Route path="/bandeja-entrada" element={<TicketList viewType="AVAILABLE" />} />
         <Route path="/mis-casos" element={<TicketList viewType="MINE" />} />
+        <Route path="/tickets-global" element={<TicketList viewType="ALL" />} />
         
         {/* --- DETALLES DE TICKET (Para todos) --- */}
         <Route path="/tickets/:id" element={<TicketDetail />} />

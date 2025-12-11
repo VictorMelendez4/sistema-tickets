@@ -1,56 +1,68 @@
 import mongoose from "mongoose";
 
-const TicketSchema = new mongoose.Schema(
+const ticketSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true, trim: true },
-    description: { type: String, required: true },
-    
-    // Departamento
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     department: {
       type: String,
-      enum: ["HARDWARE", "SOFTWARE", "REDES", "SOPORTE GENERAL"], 
       required: true,
+      enum: ["SOPORTE GENERAL", "REDES", "HARDWARE", "SOFTWARE"],
+      default: "SOPORTE GENERAL",
     },
-    
     priority: {
       type: String,
       enum: ["BAJA", "MEDIA", "ALTA", "CRITICA"],
-      default: "MEDIA",
+      default: "BAJA",
     },
     status: {
       type: String,
       enum: ["ABIERTO", "EN_PROCESO", "ESPERANDO_CLIENTE", "RESUELTO", "CERRADO"],
       default: "ABIERTO",
     },
-    createdBy: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "User", 
-      required: true 
-    },
-    assignedTo: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "User",
-      default: null
-    },
-    solution: { type: String }, 
-    
-    comments: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Comment" 
-    }],
-
-    rating: { 
-      type: Number, 
-      min: 0, 
-      max: 5, 
-      default: 0 // 0 significa "No calificado"
-    },
-    feedback: { 
+    // 👇 ¡ESTO ES LO QUE FALTABA!
+    attachment: { 
       type: String, 
-      default: "" // Comentario opcional del cliente
+      default: null 
+    },
+    // ---------------------------
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    comments: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Comment",
+      },
+    ],
+    // Campos para Calificación
+    rating: {
+      type: Number,
+      default: 0
+    },
+    feedback: {
+        type: String,
+        default: ""
     }
   },
-  { timestamps: true }
+  {
+    timestamps: true, // Crea createdAt y updatedAt automáticamente
+  }
 );
 
-export const Ticket = mongoose.model("Ticket", TicketSchema);
+export const Ticket = mongoose.model("Ticket", ticketSchema);

@@ -7,8 +7,12 @@ import commentRoutes from "./routes/comment.routes.js";
 // import mongoSanitize from "express-mongo-sanitize"; // Mantenlo comentado por ahora
 import rateLimit from "express-rate-limit";
 import userRoutes from "./routes/user.routes.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ==========================================
 // 1. CORS (EL PORTERO) - ¡VA PRIMERO!
@@ -25,6 +29,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ==========================================
 // 2. CONFIGURACIONES BÁSICAS

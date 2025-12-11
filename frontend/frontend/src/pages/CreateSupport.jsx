@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../api/axios";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function CreateSupport() {
   const navigate = useNavigate();
@@ -10,7 +10,8 @@ export default function CreateSupport() {
     lastName: "",
     email: "",
     password: "",
-    department: "SOPORTE GENERAL",
+    role: "SUPPORT", // Valor por defecto
+    department: "SOPORTE GENERAL" // Valor por defecto
   });
 
   const handleChange = (e) => {
@@ -20,59 +21,67 @@ export default function CreateSupport() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Llamamos a la ruta protegida
+      // Enviamos los datos al endpoint especial de creación de staff
       await api.post("/auth/create-staff", formData);
-      toast.success("¡Agente de soporte creado!");
-      navigate("/gestion-tickets"); // O redirigir a donde quieras
+      toast.success("Personal creado exitosamente");
+      navigate("/usuarios"); // Redirigir a la lista de usuarios
     } catch (error) {
       console.error(error);
-      const msg = error.response?.data?.msg || "Error al crear agente";
-      toast.error(msg);
+      toast.error(error.response?.data?.msg || "Error al crear personal");
     }
   };
 
   return (
     <div className="container mt-4" style={{ maxWidth: "600px" }}>
       <div className="card shadow border-0">
-        <div className="card-header bg-dark text-white py-3">
-          <h4 className="mb-0 fw-bold"><i className="bi bi-person-badge-fill me-2"></i> Alta de Personal</h4>
+        <div className="card-header bg-dark text-white fw-bold">
+          <i className="bi bi-person-badge-fill me-2"></i> Alta de Nuevo Personal
         </div>
         <div className="card-body p-4">
           <form onSubmit={handleSubmit}>
-            
-            <div className="row mb-3">
-              <div className="col-md-6">
-                <label className="form-label fw-bold">Nombre</label>
-                <input type="text" name="firstName" className="form-control" required onChange={handleChange} />
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label fw-bold small">Nombre</label>
+                <input required name="firstName" className="form-control" onChange={handleChange} />
               </div>
-              <div className="col-md-6">
-                <label className="form-label fw-bold">Apellido</label>
-                <input type="text" name="lastName" className="form-control" required onChange={handleChange} />
+              <div className="col-md-6 mb-3">
+                <label className="form-label fw-bold small">Apellido</label>
+                <input required name="lastName" className="form-control" onChange={handleChange} />
               </div>
             </div>
 
             <div className="mb-3">
-              <label className="form-label fw-bold">Correo Corporativo</label>
-              <input type="email" name="email" className="form-control" required onChange={handleChange} />
+              <label className="form-label fw-bold small">Correo Institucional</label>
+              <input required type="email" name="email" className="form-control" onChange={handleChange} />
             </div>
 
             <div className="mb-3">
-              <label className="form-label fw-bold">Contraseña Temporal</label>
-              <input type="password" name="password" className="form-control" required onChange={handleChange} />
+              <label className="form-label fw-bold small">Contraseña Temporal</label>
+              <input required type="password" name="password" className="form-control" minLength="6" onChange={handleChange} />
             </div>
 
-            <div className="mb-4">
-              <label className="form-label fw-bold">Departamento Asignado</label>
-              <select name="department" className="form-select" onChange={handleChange}>
-                <option value="SOPORTE GENERAL">Soporte General</option>
-                <option value="HARDWARE">Hardware (Equipos)</option>
-                <option value="SOFTWARE">Software (Sistemas)</option>
-                <option value="REDES">Redes y Conectividad</option>
-              </select>
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label fw-bold small">Rol en el Sistema</label>
+                <select name="role" className="form-select" onChange={handleChange} value={formData.role}>
+                  <option value="SUPPORT">Agente de Soporte</option>
+                  <option value="ADMIN">Administrador</option>
+                </select>
+              </div>
+
+              <div className="col-md-6 mb-3">
+                <label className="form-label fw-bold small">Departamento</label>
+                <select name="department" className="form-select" onChange={handleChange} value={formData.department}>
+                  <option value="SOPORTE GENERAL">Soporte General</option>
+                  <option value="REDES">Redes y Conectividad</option>
+                  <option value="HARDWARE">Hardware y Mantenimiento</option>
+                  <option value="SOFTWARE">Software y Licencias</option>
+                </select>
+              </div>
             </div>
 
-            <button type="submit" className="btn btn-primary w-100 fw-bold py-2">
-              Registrar Agente
+            <button className="btn btn-primary w-100 fw-bold mt-3">
+              <i className="bi bi-save me-2"></i> Registrar Empleado
             </button>
           </form>
         </div>

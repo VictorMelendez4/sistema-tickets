@@ -4,6 +4,10 @@ import { api } from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
+// URL BASE PARA LAS IMÁGENES
+//const API_URL = "http://localhost:4000";
+const API_URL = "http://159.54.142.179";
+
 export default function TicketDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -13,13 +17,11 @@ export default function TicketDetail() {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
-  
-  // ESTADOS PARA ADMIN/SOPORTE
+
   const [agents, setAgents] = useState([]); 
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isInternal, setIsInternal] = useState(false); // <--- NUEVO: Checkbox nota interna
+  const [isInternal, setIsInternal] = useState(false);
 
-  // ESTADOS PARA CALIFICACIÓN
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [hoverRating, setHoverRating] = useState(0);
@@ -36,21 +38,19 @@ export default function TicketDetail() {
             setFeedback(data.feedback);
         }
 
-        if (user.role === "ADMIN" || user.role === "SUPPORT") {
+        if (user.role !== "CLIENT") {
           const agentsRes = await api.get("/auth/support-agents");
           setAgents(agentsRes.data);
         }
       } catch (error) {
         toast.error("Error cargando información");
-        setLoading(false);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [id, navigate, user]);
+  }, [id, user]);
 
-  // --- 1. ACTUALIZAR ESTADO O AGENTE ---
   const handleUpdate = async (field, value) => {
     setIsUpdating(true);
     try {
@@ -64,7 +64,6 @@ export default function TicketDetail() {
     }
   };
 
-  // --- 2. ENVIAR CALIFICACIÓN ---
   const submitRating = async () => {
     if (rating === 0) return toast.error("Selecciona al menos una estrella");
     try {
@@ -80,7 +79,6 @@ export default function TicketDetail() {
     }
   };
 
-  // --- 3. ENVIAR COMENTARIO (Con soporte para Notas Internas) ---
   const handleSendComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -88,29 +86,27 @@ export default function TicketDetail() {
       const { data } = await api.post("/comments", { 
         ticketId: id, 
         content: newComment,
-        isInternal // <--- Enviamos el estado del checkbox
+        isInternal 
       });
       
       const visualComment = { ...data, author: data.author || user };
       setComments([...comments, visualComment]);
       setNewComment("");
-      setIsInternal(false); // Reseteamos el checkbox
+      setIsInternal(false);
       toast.success("Respuesta enviada");
     } catch (error) {
       toast.error("Error al enviar");
     }
   };
 
-  // --- 4. ELIMINAR TICKET ---
   const handleDelete = async () => {
-    if (!window.confirm("¿Estás seguro de eliminar este ticket? Esta acción no se puede deshacer.")) return;
+    if (!window.confirm("¿Seguro que quieres eliminar este ticket?")) return;
     try {
       await api.delete(`/tickets/${id}`);
-      toast.success("Ticket eliminado correctamente");
-      if (user.role === "ADMIN") navigate("/mis-casos"); 
-      else navigate("/mis-tickets");
+      toast.success("Eliminado");
+      navigate(user.role === "CLIENT" ? "/mis-tickets" : "/tickets-global");
     } catch (error) {
-      toast.error("Error al eliminar el ticket");
+      toast.error("Error al eliminar");
     }
   };
 
@@ -122,31 +118,55 @@ export default function TicketDetail() {
 
   return (
     <div className="container-fluid py-4" style={{ maxWidth: "1200px" }}>
-      <button onClick={() => navigate(-1)} className="btn btn-link text-decoration-none ps-0 mb-3">
+      <button onClick={() => navigate(-1)} className="btn btn-link text-decoration-none ps-0 mb-3 text-white">
         <i className="bi bi-arrow-left"></i> Volver
       </button>
 
       <div className="row g-4">
-        {/* IZQUIERDA */}
+        {/* IZQUIERDA: Detalles y Chat */}
         <div className="col-lg-8">
           
-          {/* TARJETA PRINCIPAL */}
+          {/* 1. TARJETA PRINCIPAL (DETALLES) */}
           <div className="card shadow-sm border-0 mb-4">
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h2 className="fw-bold mb-0">{ticket.title}</h2>
-                <span className={`badge ${ticket.status === 'ABIERTO' ? 'bg-success' : 'bg-secondary'}`}>
+            <div className="card-body p-4">
+              <div className="d-flex justify-content-between align-items-start mb-3">
+                <h2 className="fw-bold mb-0 text-dark">{ticket.title}</h2>
+                <span className={`badge ${ticket.status === 'ABIERTO' ? 'bg-success' : 'bg-secondary'} fs-6`}>
                   {ticket.status}
                 </span>
               </div>
+              
               <div className="bg-light p-3 rounded border mb-3">
-                <h6 className="fw-bold text-secondary small">DESCRIPCIÓN</h6>
-                <p className="mb-0" style={{ whiteSpace: "pre-wrap" }}>{ticket.description}</p>
+                <h6 className="fw-bold text-secondary small mb-2">DESCRIPCIÓN DEL PROBLEMA</h6>
+                <p className="mb-0 text-dark" style={{ whiteSpace: "pre-wrap" }}>{ticket.description}</p>
               </div>
+
+              {/* 👇 2. ZONA DE EVIDENCIA (ARCHIVO ADJUNTO) */}
+              {ticket.attachment && (
+                <div className="mt-3">
+                    <h6 className="fw-bold text-secondary small mb-2"><i className="bi bi-paperclip"></i> ARCHIVO ADJUNTO</h6>
+                    {ticket.attachment.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                        <div className="border rounded p-2 d-inline-block bg-light">
+                            <a href={`${API_URL}${ticket.attachment}`} target="_blank" rel="noreferrer">
+                                <img 
+                                    src={`${API_URL}${ticket.attachment}`} 
+                                    alt="Evidencia" 
+                                    style={{ maxHeight: "300px", maxWidth: "100%" }} 
+                                />
+                            </a>
+                        </div>
+                    ) : (
+                        <a href={`${API_URL}${ticket.attachment}`} target="_blank" rel="noreferrer" className="btn btn-outline-primary btn-sm">
+                            <i className="bi bi-download me-2"></i> Descargar Archivo
+                        </a>
+                    )}
+                </div>
+              )}
+
             </div>
           </div>
 
-          {/* === ZONA DE CALIFICACIÓN === */}
+          {/* 3. CALIFICACIÓN (Solo Cliente) */}
           {canRate && (
             <div className="card shadow-sm border-0 mb-4 border-warning">
                 <div className="card-body text-center bg-white">
@@ -174,13 +194,12 @@ export default function TicketDetail() {
              </div>
           )}
 
-          {/* === CHAT / HISTORIAL === */}
+          {/* 4. CHAT / HISTORIAL */}
           <div className="card shadow-sm border-0">
-            <div className="card-header bg-white fw-bold"><i className="bi bi-chat-dots"></i> Historial</div>
+            <div className="card-header bg-white fw-bold py-3"><i className="bi bi-chat-dots me-2"></i> Historial de Comentarios</div>
             
             <div className="card-body bg-light" style={{ maxHeight: "500px", overflowY: "auto" }}>
               {comments
-                // FILTRO DE SEGURIDAD VISUAL: Ocultar internos al cliente
                 .filter(c => {
                     if (user.role === "CLIENT" && c.isInternal) return false;
                     return true;
@@ -189,26 +208,29 @@ export default function TicketDetail() {
                 <div key={i} className={`d-flex mb-3 ${c.author?._id === user.id ? "justify-content-end" : ""}`}>
                   <div 
                     className={`card px-3 py-2 border-0 shadow-sm ${
-                        c.isInternal ? "border border-warning bg-warning-subtle" : // Estilo para notas internas
+                        c.isInternal ? "border border-warning bg-warning-subtle" : 
                         c.author?._id === user.id ? "bg-primary text-white" : "bg-white"
                     }`} 
-                    style={{maxWidth:"80%"}}
+                    style={{maxWidth:"85%"}}
                   >
-                    <div className="d-flex justify-content-between align-items-center gap-2">
+                    <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
                         <small className="fw-bold" style={{fontSize:"0.75rem", opacity: 0.9}}>
                           {c.author?.firstName} {c.isInternal && <span className="badge bg-warning text-dark ms-1" style={{fontSize:"0.6rem"}}>NOTA INTERNA</span>}
                         </small>
+                        <small style={{fontSize:"0.65rem", opacity: 0.7}}>
+                            {new Date(c.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </small>
                     </div>
-                    <p className="mb-0">{c.content || c.text}</p>
+                    <p className="mb-0">{c.content}</p>
                   </div>
                 </div>
               ))}
+              {comments.length === 0 && <p className="text-center text-muted small my-3">No hay comentarios aún.</p>}
             </div>
             
-            <div className="card-footer bg-white p-2">
+            <div className="card-footer bg-white p-3">
               <form onSubmit={handleSendComment}>
-                {/* CHECKBOX NOTA INTERNA (Solo Admin/Soporte) */}
-                {(user.role === "ADMIN" || user.role === "SUPPORT") && (
+                {(user.role !== "CLIENT") && (
                     <div className="form-check mb-2">
                         <input 
                             className="form-check-input" 
@@ -224,24 +246,39 @@ export default function TicketDetail() {
                 )}
                 
                 <div className="input-group">
-                    <input className="form-control" placeholder="Escribir respuesta..." value={newComment} onChange={e=>setNewComment(e.target.value)}/>
-                    <button className="btn btn-primary"><i className="bi bi-send"></i></button>
+                    <input className="form-control" placeholder="Escribe una respuesta..." value={newComment} onChange={e=>setNewComment(e.target.value)}/>
+                    <button className="btn btn-primary"><i className="bi bi-send-fill"></i></button>
                 </div>
               </form>
             </div>
           </div>
         </div>
 
-        {/* DERECHA: PANEL DE CONTROL */}
+        {/* DERECHA: GESTIÓN */}
         <div className="col-lg-4">
           <div className="card shadow-sm border-0">
-            <div className="card-header bg-dark text-white fw-bold">
-              <i className="bi bi-tools me-2"></i> Gestión
+            <div className="card-header bg-dark text-white fw-bold py-3">
+              <i className="bi bi-tools me-2"></i> Gestión del Ticket
             </div>
             <div className="card-body">
               
+                {/*  ACCESO RÁPIDO A EVIDENCIA (Solo si existe) */}
+              {ticket.attachment && (
+                <div className="mb-4 pb-3 border-bottom">
+                    <label className="form-label fw-bold small text-muted">EVIDENCIA</label>
+                    <a 
+                        href={`${API_URL}${ticket.attachment}`} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="btn btn-primary w-100 btn-sm"
+                    >
+                        <i className="bi bi-eye-fill me-2"></i> Ver Archivo Adjunto
+                    </a>
+                </div>
+              )}              
+
               <div className="mb-4">
-                <label className="form-label fw-bold small text-muted">ESTADO</label>
+                <label className="form-label fw-bold small text-muted">ESTADO ACTUAL</label>
                 {isAdmin ? (
                   <select className="form-select" value={ticket.status} disabled={isUpdating} onChange={(e) => handleUpdate("status", e.target.value)}>
                     <option value="ABIERTO">🟢 Abierto</option>
@@ -251,34 +288,47 @@ export default function TicketDetail() {
                     <option value="CERRADO">⚫ Cerrado</option>
                   </select>
                 ) : (
-                  <div className="form-control bg-light">{ticket.status}</div>
+                  <div className="form-control bg-light text-secondary fw-bold">{ticket.status}</div>
                 )}
               </div>
 
               <div className="mb-4">
-                <label className="form-label fw-bold small text-muted">ASIGNADO A</label>
+                <label className="form-label fw-bold small text-muted">AGENTE ASIGNADO</label>
                 {isAdmin ? (
                   <select className="form-select" value={ticket.assignedTo?._id || ""} disabled={isUpdating} onChange={(e) => handleUpdate("assignedTo", e.target.value)}>
                     <option value="">-- Sin Asignar --</option>
                     {agents.map(a => (
-                      <option key={a._id} value={a._id}>{a.firstName} {a.lastName}</option>
+                      <option key={a._id} value={a._id}>{a.firstName} {a.lastName} ({a.department || "General"})</option>
                     ))}
                   </select>
                 ) : (
-                  <div className="form-control bg-light">
-                    {ticket.assignedTo ? ticket.assignedTo.firstName : "Sin asignar"}
+                  <div className="form-control bg-light text-secondary">
+                    {ticket.assignedTo ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}` : "Sin asignar"}
                   </div>
                 )}
               </div>
               
               <hr />
-              <div className="small text-muted mb-3">
-                Solicitante: <strong>{ticket.createdBy?.email}</strong>
+              <div className="mb-3">
+                 <small className="text-muted d-block">Solicitante:</small>
+                 <strong>{ticket.createdBy?.firstName} {ticket.createdBy?.lastName}</strong>
+                 <br/><small className="text-muted">{ticket.createdBy?.email}</small>
               </div>
 
-              {/* BOTÓN ELIMINAR (SOLO ADMIN) */}
+              <div className="mb-3">
+                 <small className="text-muted d-block">Departamento:</small>
+                 <span className="badge bg-light text-dark border">{ticket.department}</span>
+              </div>
+
+              <div className="mb-3">
+                 <small className="text-muted d-block">Prioridad:</small>
+                 <span className={`badge ${ticket.priority === 'CRITICA' ? 'bg-danger' : ticket.priority === 'ALTA' ? 'bg-warning text-dark' : 'bg-success'}`}>
+                    {ticket.priority}
+                 </span>
+              </div>
+
               {user.role === "ADMIN" && (
-                <button onClick={handleDelete} className="btn btn-outline-danger w-100">
+                <button onClick={handleDelete} className="btn btn-outline-danger w-100 mt-3">
                     <i className="bi bi-trash me-2"></i> Eliminar Ticket
                 </button>
               )}

@@ -114,12 +114,11 @@ export default function TicketList({ viewType }) {
     ticket._id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const TicketCard = ({ ticket }) => (
+const TicketCard = ({ ticket }) => (
     <div 
         className="card shadow-sm mb-3 hover-shadow transition" 
         style={{ 
-            border: "1px solid #444", 
-            overflow: "hidden",      
+            border: "1px solid #e5e7eb", 
             ...getSLAStyle(ticket.createdAt, ticket.status)
         }}
     >
@@ -151,10 +150,28 @@ export default function TicketList({ viewType }) {
         </p>
         
         <div className="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
-          <small className="text-muted">
-            <i className="bi bi-person me-1"></i> 
-            Solicitante: <strong>{ticket.createdBy?.firstName || "Cliente"}</strong>
-          </small>
+          <div className="d-flex gap-3">
+            {/* SOLICITANTE */}
+            <small className="text-muted">
+                <i className="bi bi-person me-1"></i> 
+                De: <strong>{ticket.createdBy?.firstName || "Cliente"}</strong>
+            </small>
+
+            {/* 👇 NUEVO: ASIGNADO A */}
+            {ticket.assignedTo && (
+                <small className="text-primary fw-bold">
+                    <i className="bi bi-headset me-1"></i> 
+                    Atiende: {ticket.assignedTo.firstName} {ticket.assignedTo.lastName}
+                </small>
+            )}
+             
+             {/* SI NO TIENE A NADIE */}
+            {!ticket.assignedTo && (
+                <small className="text-danger fst-italic">
+                    <i className="bi bi-exclamation-circle me-1"></i> Sin Asignar
+                </small>
+            )}
+          </div>
           
           {viewType === "AVAILABLE" && (
             <button onClick={() => handleTakeTicket(ticket._id)} className="btn btn-sm btn-primary fw-bold">
