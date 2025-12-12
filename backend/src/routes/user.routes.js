@@ -17,7 +17,7 @@ router.get("/profile/stats", getMyStats);
 router.use(authorize("ADMIN"));
 
 // 1. Ruta de Métricas (¡SIEMPRE ANTES DEL ID!)
-router.get("/staff/metrics", getStaffMetrics);
+router.get("/staff/metrics", authorize("ADMIN", "SUPPORT"), getStaffMetrics);
 
 // 2. Rutas Generales
 router.route("/")
