@@ -65,10 +65,19 @@ export function AuthProvider({ children }) {
     checkLogin();
   }, []);
 
-  const login = async (email, password) => {
+ const login = async (email, password) => {
+    // 1. Recibimos la "caja" completa del backend
     const { data } = await api.post("/auth/login", { email, password });
-    // El backend manda la Cookie sola. Nosotros solo guardamos los datos del usuario.
-    setAuthData(data); 
+    
+    // 2. CORRECCIÓN: Sacamos solo el usuario de adentro
+    // Tu backend devuelve: { status: "success", user: { ...datos... } }
+    if (data.user) {
+        setAuthData(data.user); // Guardamos solo los datos limpios
+        return data.user;
+    } 
+    
+    // (Por seguridad, si algún día cambia el backend)
+    setAuthData(data);
     return data;
   };
 
