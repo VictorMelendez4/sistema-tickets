@@ -8,7 +8,7 @@ import * as XLSX from "xlsx";
 export default function TicketList({ viewType }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(""); // <--- 1. ESTADO DEL BUSCADOR
+  const [searchTerm, setSearchTerm] = useState("");
   
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -35,15 +35,17 @@ export default function TicketList({ viewType }) {
         assignedTo: user.id,
         status: "EN_PROCESO" 
       });
-      toast.success("¡Caso asignado a ti!");
+      // NOTIFICACIÓN MEJORADA
+      toast.success("¡Caso asignado a ti! Manos a la obra. 🫡", {
+         style: { borderRadius: '10px', background: '#333', color: '#fff' }
+      });
       fetchTickets();
     } catch (error) {
-      toast.error("No se pudo tomar el ticket");
+      toast.error("No se pudo asignar el caso.");
     }
   };
 
   const exportToExcel = () => {
-    // Exportamos LO QUE SE VE (filtrado)
     const dataToExport = filteredTickets.map(t => ({
       "ID Ticket": t._id.slice(-6).toUpperCase(), 
       "Asunto": t.title,
@@ -61,7 +63,11 @@ export default function TicketList({ viewType }) {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte de Tickets");
     XLSX.writeFile(workbook, `Reporte_Tickets_${new Date().toISOString().slice(0,10)}.xlsx`);
-    toast.success("Reporte descargado correctamente 📄");
+    
+    //NOTIFICACIÓN EXCEL
+    toast.success("Excel generado correctamente 📄", {
+        style: { borderRadius: '10px', background: '#217346', color: '#fff' }
+    });
   };
 
   const getSLAStyle = (createdAt, status) => {
@@ -81,13 +87,11 @@ export default function TicketList({ viewType }) {
 
   if (loading) return <div className="p-5 text-center">Cargando...</div>;
 
-  // === 2. LÓGICA DE FILTRADO ===
   let baseList = [];
   let title = "";
   let icon = "";
   let emptyMsg = "";
 
-  // A. Primero elegimos qué lista base usar según el Rol/Vista
   if (viewType === "AVAILABLE") {
     baseList = tickets.filter(t => !t.assignedTo);
     title = `Bandeja: ${user.department || "General"}`;
@@ -107,7 +111,6 @@ export default function TicketList({ viewType }) {
     emptyMsg = "No hay reportes registrados.";
   }
 
-  // B. Luego aplicamos el Buscador sobre esa lista base
   const filteredTickets = baseList.filter(ticket => 
     ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -151,13 +154,11 @@ const TicketCard = ({ ticket }) => (
         
         <div className="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
           <div className="d-flex gap-3">
-            {/* SOLICITANTE */}
             <small className="text-muted">
                 <i className="bi bi-person me-1"></i> 
                 De: <strong>{ticket.createdBy?.firstName || "Cliente"}</strong>
             </small>
 
-            {/* 👇 NUEVO: ASIGNADO A */}
             {ticket.assignedTo && (
                 <small className="text-primary fw-bold">
                     <i className="bi bi-headset me-1"></i> 
@@ -165,7 +166,6 @@ const TicketCard = ({ ticket }) => (
                 </small>
             )}
              
-             {/* SI NO TIENE A NADIE */}
             {!ticket.assignedTo && (
                 <small className="text-danger fst-italic">
                     <i className="bi bi-exclamation-circle me-1"></i> Sin Asignar
@@ -195,7 +195,6 @@ const TicketCard = ({ ticket }) => (
         {`@keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }`}
       </style>
 
-      {/* CABECERA Y BUSCADOR */}
       <div className="row mb-4 align-items-center">
         <div className="col-md-6">
             <h2 className="fw-bold text-dark mb-0">
@@ -204,7 +203,6 @@ const TicketCard = ({ ticket }) => (
         </div>
         
         <div className="col-md-6 d-flex gap-2 justify-content-md-end mt-3 mt-md-0">
-             {/* 3. INPUT DE BÚSQUEDA */}
             <div className="input-group" style={{maxWidth: "300px"}}>
                 <span className="input-group-text bg-white border-end-0"><i className="bi bi-search"></i></span>
                 <input 

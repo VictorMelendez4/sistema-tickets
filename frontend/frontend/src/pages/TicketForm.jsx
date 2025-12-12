@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/axios";
-import toast from "react-hot-toast";
+import toast from "react-hot-toast"; // Librería de notificaciones
 
 export default function TicketForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [department, setDepartment] = useState("SOPORTE GENERAL");
   const [priority, setPriority] = useState("BAJA");
-  const [file, setFile] = useState(null); // <--- ESTADO PARA EL ARCHIVO
+  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -18,7 +18,6 @@ export default function TicketForm() {
     setLoading(true);
 
     try {
-      // ⚠️ IMPORTANTE: Usamos FormData para enviar archivos
       const formData = new FormData();
       formData.append("title", title);
       formData.append("description", description);
@@ -26,16 +25,23 @@ export default function TicketForm() {
       formData.append("priority", priority);
       
       if (file) {
-        formData.append("file", file); // El nombre "file" debe coincidir con el backend
+        formData.append("file", file);
       }
 
-      // Axios detecta FormData y pone el header correcto automáticamente
       await api.post("/tickets", formData);
       
-      toast.success("Ticket creado exitosamente");
+      // NOTIFICACIÓN MEJORADA
+      toast.success("¡Reporte enviado! El equipo ha sido notificado.", {
+        style: { borderRadius: '10px', background: '#333', color: '#fff' },
+        duration: 4000
+      });
+      
       navigate("/mis-tickets");
     } catch (error) {
-      toast.error("Error al crear el ticket");
+      // NOTIFICACIÓN DE ERROR
+      toast.error("No se pudo enviar el reporte. Intenta de nuevo.", {
+        style: { borderRadius: '10px', background: '#fff0f0', color: '#d00' }
+      });
     } finally {
       setLoading(false);
     }
@@ -93,13 +99,12 @@ export default function TicketForm() {
               ></textarea>
             </div>
 
-            {/* INPUT DE ARCHIVO */}
             <div className="mb-4">
                 <label className="form-label fw-bold">Evidencia (Opcional)</label>
                 <input 
                     type="file" 
                     className="form-control" 
-                    accept="image/*, .pdf" // Acepta imagenes y PDF
+                    accept="image/*, .pdf" 
                     onChange={(e) => setFile(e.target.files[0])} 
                 />
                 <div className="form-text">Puedes subir capturas de pantalla o fotos del error.</div>
