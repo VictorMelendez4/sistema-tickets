@@ -1,10 +1,9 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import { api } from "../api/axios";
+import Cookies from "js-cookie"; // Asegúrate de tener instalado js-cookie, si no, usa la lógica manual
 
-// 1. Exportamos el Contexto
 export const AuthContext = createContext();
 
-// 2. Exportamos el Hook personalizado
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -13,45 +12,52 @@ export const useAuth = () => {
   return context;
 };
 
-// 3. El Provider
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // --- FUNCIÓN QUE TE FALTABA ---
-  // Esta función permite guardar la sesión manualmente (ej. tras registro)
-  const setAuthData = (userData, token) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userData));
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    setUser(userData);
-    setIsAuthenticated(true);
+  //  FUNCIÓN CORREGIDA: Solo guardamos el usuario, no el token (el token va en cookie)
+  const setAuthData = (userData) => {
+    try {
+        if (!userData) return;
+        localStorage.setItem("user", JSON.stringify(userData));
+        setUser(userData);
+        setIsAuthenticated(true);
+    } catch (error) {
+        console.error("Error guardando sesión:", error);
+    }
   };
-  // -----------------------------
 
-  // Cargar sesión al iniciar la app
+  //  CARGA BLINDADA: No explota si hay basura en el navegador
   useEffect(() => {
     async function checkLogin() {
-      const token = localStorage.getItem("token");
       const storedUser = localStorage.getItem("user");
 
-      if (!token || !storedUser) {
+      // Validación extra: Si es null, vacío o la palabra "undefined"
+      if (!storedUser || storedUser === "undefined") {
         setIsAuthenticated(false);
         setLoading(false);
         return;
       }
 
       try {
-        // Opcional: Verificar token con backend aquí.
-        // Por ahora confiamos en localStorage para rapidez.
-        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        setUser(JSON.parse(storedUser));
+        // Intentamos convertir el texto a objeto
+        const parsedUser = JSON.parse(storedUser);
+        
+        // Si funcionó, restauramos la sesión visualmente
+        setUser(parsedUser);
         setIsAuthenticated(true);
+        
+        // (Opcional) Aquí podrías verificar con el backend si la cookie sigue viva
+        // await api.get('/auth/verify'); 
+
       } catch (error) {
-        console.error(error);
-        setIsAuthenticated(false);
+        // Si falla (JSON inválido), limpiamos la basura automáticamente
+        console.warn("Sesión corrupta detectada. Limpiando...");
+        localStorage.removeItem("user");
         setUser(null);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -59,18 +65,20 @@ export function AuthProvider({ children }) {
     checkLogin();
   }, []);
 
-  // Función de Login normal
   const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
-    setAuthData(data.user, data.token); // Reutilizamos la función interna
-    return data; // Devolvemos data por si el componente la necesita
+    // El backend manda la Cookie sola. Nosotros solo guardamos los datos del usuario.
+    setAuthData(data); 
+    return data;
   };
 
-  // Función de Logout
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    delete api.defaults.headers.common["Authorization"];
+  const logout = async () => {
+    try {
+        await api.post("/auth/logout"); // Avisar al backend para borrar cookie
+    } catch (error) {
+        console.error(error);
+    }
+    localStorage.removeItem("user"); // Borrar datos locales
     setUser(null);
     setIsAuthenticated(false);
   };
@@ -83,7 +91,7 @@ export function AuthProvider({ children }) {
         logout,
         isAuthenticated,
         loading,
-        setAuthData, // <--- ¡AQUÍ ESTABA EL ERROR! Faltaba exportar esto
+        setAuthData,
       }}
     >
       {children}
