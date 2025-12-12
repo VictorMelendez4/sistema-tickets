@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 // 1. IMPORTAR SEGURIDAD
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import mongoSanitize from "express-mongo-sanitize";
+// import mongoSanitize from "express-mongo-sanitize"; // 👈 COMENTADO TEMPORALMENTE PARA CORREGIR EL ERROR 500
 
 // Rutas
 import authRoutes from "./routes/auth.routes.js";
@@ -21,28 +21,11 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 2. CONFIGURAR SEGURIDAD
+// ⚡ IMPORTANTE PARA NGINX:
+// Permite que el Rate Limit vea la IP real del usuario y no la de Nginx
+app.set('trust proxy', 1);
 
-// Helmet: Protege cabeceras HTTP (Permitimos carga de imágenes cruzada para evitar conflictos)
-app.use(helmet({
-  crossOriginResourcePolicy: false,
-}));
-
-// Mongo Sanitize: Evita inyecciones NoSQL básicas
-app.use(mongoSanitize());
-
-// Rate Limiting: Máximo 150 peticiones por 15 min por IP (Anti fuerza bruta)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max: 150, 
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: "Demasiadas peticiones desde esta IP, intenta de nuevo en 15 minutos."
-});
-// Aplicamos el límite solo a las rutas que empiezan con /api
-app.use("/api/", limiter);
-
-// Middlewares estándar
+// 2. MIDDLEWARES BÁSICOS
 app.use(cors({
     origin: ["http://localhost:5173", "https://northcode-soporte.duckdns.org"], 
     credentials: true
@@ -50,6 +33,23 @@ app.use(cors({
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
+
+// 3. CONFIGURAR SEGURIDAD
+app.use(helmet({
+  crossOriginResourcePolicy: false, // Permite cargar imágenes cruzadas
+}));
+
+// app.use(mongoSanitize()); //  DESHABILITADO POR AHORA
+
+// Rate Limiting: Máximo 150 peticiones por 15 min por IP
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 150, 
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Demasiadas peticiones desde esta IP, intenta de nuevo en 15 minutos."
+});
+app.use("/api/", limiter);
 
 // Archivos estáticos (Imágenes)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
