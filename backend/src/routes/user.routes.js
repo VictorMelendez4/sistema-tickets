@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { getAllUsers, updateUserRole, deleteUser } from "../controllers/user.controller.js";
-import { auth } from "../middlewares/auth.js";
+import { protect, authorize } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
 // Rutas protegidas para gestión de usuarios
-router.get("/", auth, getAllUsers);
-router.put("/:id", auth, updateUserRole);
-router.delete("/:id", auth, deleteUser);
+router.get("/", protect, getAllUsers);
+router.put("/:id", protect, updateUserRole);
+router.delete("/:id", protect, deleteUser);
 
 export default router;
