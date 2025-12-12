@@ -1,30 +1,23 @@
 import { Router } from "express";
-import { createTicket, getTickets, getTicket, updateTicket, deleteTicket } from "../controllers/ticket.controller.js";
-import { auth } from "../middlewares/auth.js";
-import multer from "multer"; // <--- IMPORTANTE
-import path from "path";
+import { createTicket, getTickets, getTicket, updateTicket, deleteTicket, addComment } from "../controllers/ticket.controller.js";
+// 👇 CAMBIO IMPORTANTE: Usamos el nuevo middleware
+import { protect, authorize } from "../middlewares/auth.middleware.js"; 
 
 const router = Router();
 
-// 1. CONFIGURACIÓN DE MULTER (Dónde guardar)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Guardar en carpeta 'uploads'
-  },
-  filename: (req, file, cb) => {
-    // Nombre único: fecha + extensión (ej: 123456789.png)
-    cb(null, Date.now() + path.extname(file.originalname)); 
-  }
-});
-const upload = multer({ storage });
+// Protegemos todas las rutas de aquí para abajo
+router.use(protect);
 
-// 2. RUTAS
-// Notar el 'upload.single("file")' -> Espera un campo llamado 'file'
-router.post("/", auth, upload.single("file"), createTicket);
+router.route("/")
+  .post(createTicket)
+  .get(getTickets);
 
-router.get("/", auth, getTickets);
-router.get("/:id", auth, getTicket);
-router.put("/:id", auth, updateTicket);
-router.delete("/:id", auth, deleteTicket);
+router.route("/:id")
+  .get(getTicket)
+  .put(updateTicket)
+  .delete(authorize("ADMIN", "SUPPORT"), deleteTicket);
+
+router.route("/:id/comments")
+  .post(addComment);
 
 export default router;

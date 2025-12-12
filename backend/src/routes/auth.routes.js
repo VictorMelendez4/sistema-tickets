@@ -1,22 +1,17 @@
 import { Router } from "express";
-import {
-  register,
-  login,
-  getSupportAgents,
-  createStaff,
-  updatePassword 
-} from "../controllers/auth.controller.js";
-import { auth } from "../middlewares/auth.js";
+import { register, login, logout, createStaff, getSupportAgents, updatePassword } from "../controllers/auth.controller.js";
+// Update the import to match the new middleware
+import { protect, authorize } from "../middlewares/auth.middleware.js"; 
 
 const router = Router();
 
-// Rutas Públicas
-router.post("/login", login);
 router.post("/register", register);
+router.post("/login", login);
+router.post("/logout", logout);
 
-// Rutas Protegidas (Requieren Token)
-router.get("/support-agents", auth, getSupportAgents);
-router.post("/create-staff", auth, createStaff); 
-router.put("/profile/password", auth, updatePassword);
+// Protected routes
+router.get("/agents", protect, getSupportAgents);
+router.post("/create-staff", protect, authorize("ADMIN"), createStaff);
+router.put("/update-password", protect, updatePassword);
 
 export default router;
