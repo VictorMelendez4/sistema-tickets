@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import toast from 'react-hot-toast';
+import toast from 'react-hot-toast'; // 👈 Importar Toast
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   
-  const { login } = useAuth(); // Usamos la función del contexto
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -16,18 +16,23 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // 1. Llamamos al login del contexto (que ya maneja cookies y estado)
       const user = await login(email, password);
       
-      // 2. Éxito
-      toast.success(`¡Bienvenido, ${user.firstName}!`);
+      // 👇 NOTIFICACIÓN DE ÉXITO
+      toast.success(`¡Bienvenido, ${user.firstName || 'Usuario'}!`, {
+        icon: '👋',
+        style: { borderRadius: '10px', background: '#333', color: '#fff' },
+      });
       navigate("/"); 
 
     } catch (error) {
       console.error(error);
-      // Mensaje de error seguro
       const msg = error.response?.data?.message || "Credenciales incorrectas";
-      toast.error(msg);
+      
+      // 👇 NOTIFICACIÓN DE ERROR
+      toast.error(msg, {
+        style: { borderRadius: '10px', background: '#fff0f0', color: '#d00' },
+      });
     } finally {
       setLoading(false);
     }
@@ -37,7 +42,7 @@ export default function Login() {
     <div className="container-fluid min-vh-100 d-flex p-0 bg-white">
       <div className="row g-0 flex-fill">
         
-        {/* === COLUMNA IZQUIERDA: FORMULARIO === */}
+        {/* COLUMNA IZQUIERDA */}
         <div className="col-lg-6 d-flex flex-column justify-content-center px-5 py-5">
           <div className="mx-auto w-100" style={{ maxWidth: "420px" }}>
             
@@ -96,7 +101,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* === COLUMNA DERECHA: IMAGEN === */}
+        {/* COLUMNA DERECHA */}
         <div className="col-lg-6 d-none d-lg-block position-relative p-0"
             style={{ 
               backgroundImage: "url('https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=1932&auto=format&fit=crop')",

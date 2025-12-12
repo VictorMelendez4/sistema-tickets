@@ -28,32 +28,29 @@ export default function AppRouter() {
 
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         
-        {/* INICIO */}
+        {/* INICIO (Métricas y Gráficas) */}
         <Route path="/" element={<Dashboard />} />
         
-        {/* 👇 1. AGREGAMOS ESTA RUTA PARA QUE "MONITOR GLOBAL" FUNCIONE */}
-        {/* Reusamos el Dashboard porque ahí pusiste las gráficas */}
-        <Route path="/monitor-global" element={<Dashboard />} />
-
-        {/* 👇 2. AGREGAMOS LA RUTA DE PERFIL */}
+        {/* 👇 CAMBIO CLAVE: "Monitor Global" ahora muestra la LISTA DE TODOS LOS TICKETS */}
+        <Route path="/monitor-global" element={<TicketList viewType="ALL" />} />
+        
+        {/* PERFIL */}
         <Route path="/perfil" element={<Profile />} />
 
-        {/* CLIENTES */}
+        {/* RUTAS CLIENTE */}
         <Route path="/nuevo-ticket" element={<TicketForm />} />
         <Route path="/mis-tickets" element={<TicketList viewType="CLIENT" />} />
 
-        {/* STAFF */}
+        {/* RUTAS STAFF */}
         <Route path="/bandeja-entrada" element={<TicketList viewType="AVAILABLE" />} />
         <Route path="/mis-casos" element={<TicketList viewType="MINE" />} />
-        <Route path="/tickets-global" element={<TicketList viewType="ALL" />} />
         
         {/* DETALLE */}
         <Route path="/tickets/:id" element={<TicketDetail />} />
         
-        {/* ADMIN */}
+        {/* RUTAS ADMIN */}
         {user?.role === "ADMIN" && (
            <>
-             {/* 👇 3. CORREGIMOS EL NOMBRE: '/alta-personal' para que coincida con el Sidebar */}
              <Route path="/alta-personal" element={<CreateSupport />} />
              <Route path="/usuarios" element={<UserList />} />
            </>
