@@ -9,10 +9,17 @@ import rateLimit from "express-rate-limit";
 import userRoutes from "./routes/user.routes.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+
+// ==========================================
+// 0. CONFIGURACIÓN CRÍTICA PARA NGINX/HTTPS
+// ==========================================
+app.set("trust proxy", 1);
 
 // ==========================================
 // 1. CORS (EL PORTERO) - ¡VA PRIMERO!
@@ -22,7 +29,8 @@ app.use(
     origin: [
       "http://localhost:5173",       // Frontend Local
       "http://127.0.0.1:5173",       // Frontend Local (Variante)
-      "http://159.54.142.179"        // Servidor Producción
+      "http://159.54.142.179",
+      "https://northcode-soporte.duckdns.org",        // Servidor Producción
     ],
     credentials: true,               // Permite cookies/tokens
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -34,8 +42,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // ==========================================
 // 2. CONFIGURACIONES BÁSICAS
 // ==========================================
-app.use(express.json());
+app.use(express.json({ limit: '20mb' })); // Límite aumentado para imágenes
+app.use(express.urlencoded({ extended: false, limit: '20mb' }));
 app.use(morgan("dev"));
+app.use(cookieParser());
 
 // Rate limiting (Opcional, mantenlo si quieres)
 const limiter = rateLimit({

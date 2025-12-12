@@ -1,18 +1,27 @@
 import jwt from "jsonwebtoken";
+import { User } from "../models/User.js";
 
-export function auth(req, res, next) {
-  const header = req.headers.authorization || "";
-  const [type, token] = header.split(" ");
+export const protect = async (req, res, next) => {
+  let token;
 
-  if (type !== "Bearer" || !token) {
-    return res.status(401).json({ msg: "No autorizado" });
+  // 1. Buscamos el token en la COOKIE (Prioridad)
+  if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  } 
+  // 2. O en el Header (Respaldo)
+  else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+
+  if (!token) {
+    return res.status(401).json({ msg: "No autorizado, inicie sesión" });
   }
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload; // { id, role }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select("-passwordHash");
     next();
-  } catch (err) {
-    return res.status(401).json({ msg: "Token inválido" });
+  } catch (error) {
+    res.status(401).json({ msg: "Token inválido" });
   }
-}
+};
