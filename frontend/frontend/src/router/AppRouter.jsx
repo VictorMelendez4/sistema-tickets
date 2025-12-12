@@ -7,25 +7,21 @@ import Register from "../pages/Register";
 import TicketForm from "../pages/TicketForm"; 
 import TicketDetail from "../pages/TicketDetail"; 
 import Profile from "../pages/Profile";
-import CreateSupport from "../pages/CreateSupport"; 
-import UserList from "../pages/UserList"; // <--- IMPORTANTE: Importar la nueva página
+import CreateSupport from "../pages/CreateSupport"; // Asegúrate de que este archivo exista
+import UserList from "../pages/UserList"; 
 import Layout from "../components/Layout";
 
-// COMPONENTE PROTECTOR MEJORADO (Sin bucles infinitos)
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
-  // 1. Si estamos verificando sesión, mostramos un spinner y NO redirigimos aún.
   if (loading) {
     return <div className="d-flex justify-content-center align-items-center vh-100">Cargando sistema...</div>;
   }
 
-  // 2. Si terminó de cargar y NO hay usuario, entonces sí redirigimos al login.
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // 3. Si todo bien, mostramos la app protegida.
   return children;
 }
 
@@ -34,41 +30,44 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      {/* === 1. RUTAS PÚBLICAS === */}
+      {/* RUTAS PÚBLICAS */}
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Register />} />
 
-      {/* === 2. RUTAS PROTEGIDAS (Con Layout) === */}
+      {/* RUTAS PROTEGIDAS */}
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         
-        {/* Dashboard General */}
+        {/* INICIO (Dashboard General) */}
         <Route path="/" element={<Dashboard />} />
-
+        
+        {/* PERFIL (Cambio de contraseña) */}
         <Route path="/perfil" element={<Profile />} />
 
-        {/* --- RUTAS DE CLIENTE --- */}
+        {/* CLIENTES */}
         <Route path="/nuevo-ticket" element={<TicketForm />} />
         <Route path="/mis-tickets" element={<TicketList viewType="CLIENT" />} />
 
-        {/* --- RUTAS DE SOPORTE / ADMIN --- */}
+        {/* STAFF (Soporte y Admin) */}
+        {/* El Monitor Global usa el mismo Dashboard pero mostrará más datos por ser Staff */}
+        <Route path="/monitor-global" element={<Dashboard />} />
+        
         <Route path="/bandeja-entrada" element={<TicketList viewType="AVAILABLE" />} />
         <Route path="/mis-casos" element={<TicketList viewType="MINE" />} />
-        <Route path="/tickets-global" element={<TicketList viewType="ALL" />} />
         
-        {/* --- DETALLES DE TICKET (Para todos) --- */}
+        {/* DETALLE DE TICKET */}
         <Route path="/tickets/:id" element={<TicketDetail />} />
         
-        {/* --- SOLO ADMIN --- */}
+        {/* SOLO ADMIN */}
         {user?.role === "ADMIN" && (
            <>
-             <Route path="/crear-staff" element={<CreateSupport />} />
-             <Route path="/usuarios" element={<UserList />} /> {/* <--- NUEVA RUTA DE GESTIÓN */}
+             {/* 👇 AQUÍ CORREGIMOS EL NOMBRE PARA QUE COINCIDA CON EL SIDEBAR */}
+             <Route path="/alta-personal" element={<CreateSupport />} />
+             <Route path="/usuarios" element={<UserList />} />
            </>
         )}
 
       </Route>
 
-      {/* === 3. RUTA DE DESCARTE (Cualquier url rara va al inicio) === */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

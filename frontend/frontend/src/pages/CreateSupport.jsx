@@ -10,21 +10,19 @@ export default function CreateSupport() {
     lastName: "",
     email: "",
     password: "",
-    role: "SUPPORT", // Valor por defecto
-    department: "SOPORTE GENERAL" // Valor por defecto
+    role: "SUPPORT",
+    department: "SOPORTE GENERAL"
   });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Enviamos los datos al endpoint especial de creación de staff
-      await api.post("/auth/create-staff", formData);
+      // 👇 CORRECCIÓN: La ruta correcta es /users (método POST)
+      await api.post("/users", formData);
       toast.success("Personal creado exitosamente");
-      navigate("/usuarios"); // Redirigir a la lista de usuarios
+      navigate("/usuarios");
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.msg || "Error al crear personal");
@@ -34,55 +32,52 @@ export default function CreateSupport() {
   return (
     <div className="container mt-4" style={{ maxWidth: "600px" }}>
       <div className="card shadow border-0">
-        <div className="card-header bg-dark text-white fw-bold">
+        <div className="card-header bg-dark text-white fw-bold py-3">
           <i className="bi bi-person-badge-fill me-2"></i> Alta de Nuevo Personal
         </div>
         <div className="card-body p-4">
           <form onSubmit={handleSubmit}>
             <div className="row">
               <div className="col-md-6 mb-3">
-                <label className="form-label fw-bold small">Nombre</label>
+                <label className="fw-bold small">Nombre</label>
                 <input required name="firstName" className="form-control" onChange={handleChange} />
               </div>
               <div className="col-md-6 mb-3">
-                <label className="form-label fw-bold small">Apellido</label>
+                <label className="fw-bold small">Apellido</label>
                 <input required name="lastName" className="form-control" onChange={handleChange} />
               </div>
             </div>
 
             <div className="mb-3">
-              <label className="form-label fw-bold small">Correo Institucional</label>
+              <label className="fw-bold small">Correo Institucional</label>
               <input required type="email" name="email" className="form-control" onChange={handleChange} />
             </div>
 
             <div className="mb-3">
-              <label className="form-label fw-bold small">Contraseña Temporal</label>
+              <label className="fw-bold small">Contraseña Temporal</label>
               <input required type="password" name="password" className="form-control" minLength="6" onChange={handleChange} />
             </div>
 
             <div className="row">
               <div className="col-md-6 mb-3">
-                <label className="form-label fw-bold small">Rol en el Sistema</label>
+                <label className="fw-bold small">Rol</label>
                 <select name="role" className="form-select" onChange={handleChange} value={formData.role}>
                   <option value="SUPPORT">Agente de Soporte</option>
                   <option value="ADMIN">Administrador</option>
                 </select>
               </div>
-
               <div className="col-md-6 mb-3">
-                <label className="form-label fw-bold small">Departamento</label>
+                <label className="fw-bold small">Departamento</label>
                 <select name="department" className="form-select" onChange={handleChange} value={formData.department}>
                   <option value="SOPORTE GENERAL">Soporte General</option>
-                  <option value="REDES">Redes y Conectividad</option>
-                  <option value="HARDWARE">Hardware y Mantenimiento</option>
-                  <option value="SOFTWARE">Software y Licencias</option>
+                  <option value="REDES">Redes</option>
+                  <option value="HARDWARE">Hardware</option>
+                  <option value="SOFTWARE">Software</option>
                 </select>
               </div>
             </div>
 
-            <button className="btn btn-primary w-100 fw-bold mt-3">
-              <i className="bi bi-save me-2"></i> Registrar Empleado
-            </button>
+            <button className="btn btn-primary w-100 fw-bold mt-3">Registrar</button>
           </form>
         </div>
       </div>

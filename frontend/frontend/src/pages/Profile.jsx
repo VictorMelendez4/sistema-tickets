@@ -5,84 +5,77 @@ import toast from "react-hot-toast";
 
 export default function Profile() {
   const { user } = useAuth();
-  const [password, setPassword] = useState("");
+  const [passwords, setPasswords] = useState({ newPassword: "", confirmPassword: "" });
   const [loading, setLoading] = useState(false);
 
-  const handleUpdate = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password.length < 6) return toast.error("La contraseña debe tener mínimo 6 caracteres");
-    
+    if (passwords.newPassword.length < 6) return toast.error("La contraseña debe tener al menos 6 caracteres");
+    if (passwords.newPassword !== passwords.confirmPassword) return toast.error("Las contraseñas no coinciden");
+
+    setLoading(true);
     try {
-      setLoading(true);
-      await api.put("/auth/profile/password", { newPassword: password });
-      toast.success("¡Contraseña actualizada! Úsala en tu próximo inicio de sesión.");
-      setPassword(""); // Limpiar campo
+      // Usamos la ruta que ya existe en el backend: /api/auth/update-password
+      // OJO: Hay que asegurar que esta ruta exista en auth.routes.js
+      await api.put("/auth/update-password", { newPassword: passwords.newPassword });
+      toast.success("Contraseña actualizada correctamente");
+      setPasswords({ newPassword: "", confirmPassword: "" });
     } catch (error) {
-      toast.error(error.response?.data?.msg || "Error al actualizar");
+      toast.error("Error al actualizar. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container-fluid py-4" style={{ maxWidth: "800px" }}>
-      <h2 className="fw-bold mb-4"><i className="bi bi-person-circle me-2"></i> Mi Perfil</h2>
+    <div className="container" style={{maxWidth: "600px"}}>
+      <h2 className="fw-bold mb-4">Mi Perfil</h2>
       
-      <div className="row g-4">
-        {/* TARJETA DE DATOS */}
-        <div className="col-md-6">
-            <div className="card shadow-sm border-0 h-100">
-                <div className="card-header bg-white fw-bold">Datos Personales</div>
-                <div className="card-body">
-                    <div className="mb-3">
-                        <label className="small text-muted fw-bold">NOMBRE COMPLETO</label>
-                        <p className="fs-5 mb-0">{user.firstName} {user.lastName}</p>
-                    </div>
-                    <div className="mb-3">
-                        <label className="small text-muted fw-bold">CORREO ELECTRÓNICO</label>
-                        <p className="fs-5 mb-0">{user.email}</p>
-                    </div>
-                    <div>
-                        <label className="small text-muted fw-bold">ROL DEL SISTEMA</label>
-                        <div>
-                            <span className={`badge ${
-                                user.role === "ADMIN" ? "bg-danger" : 
-                                user.role === "SUPPORT" ? "bg-primary" : "bg-success"
-                            }`}>
-                                {user.role}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body p-4">
+          <div className="d-flex align-items-center gap-3 mb-4">
+             <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fs-2" style={{width: 80, height: 80}}>
+                {user.firstName.charAt(0)}
+             </div>
+             <div>
+                <h4 className="fw-bold m-0">{user.firstName} {user.lastName}</h4>
+                <p className="text-muted m-0">{user.email}</p>
+                <span className="badge bg-light text-dark border mt-2">{user.role}</span>
+             </div>
+          </div>
         </div>
+      </div>
 
-        {/* TARJETA DE CAMBIO DE PASSWORD */}
-        <div className="col-md-6">
-            <div className="card shadow-sm border-0 h-100 border-start border-4 border-warning">
-                <div className="card-body">
-                    <h5 className="fw-bold mb-3"><i className="bi bi-key-fill text-warning me-2"></i> Seguridad</h5>
-                    <p className="small text-muted">
-                        Si te asignaron una contraseña temporal o crees que tu cuenta está en riesgo, actualízala aquí.
-                    </p>
-                    
-                    <form onSubmit={handleUpdate}>
-                        <div className="mb-3">
-                            <label className="form-label fw-bold small">NUEVA CONTRASEÑA</label>
-                            <input 
-                                type="password" 
-                                className="form-control" 
-                                placeholder="Escribe tu nueva clave..."
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                            />
-                        </div>
-                        <button disabled={loading} className="btn btn-dark w-100">
-                            {loading ? "Actualizando..." : "Actualizar Contraseña"}
-                        </button>
-                    </form>
+      <div className="card shadow-sm border-0">
+        <div className="card-header bg-white py-3">
+            <h5 className="m-0 fw-bold"><i className="bi bi-shield-lock me-2"></i> Cambiar Contraseña</h5>
+        </div>
+        <div className="card-body p-4">
+            <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                    <label className="form-label">Nueva Contraseña</label>
+                    <input 
+                        type="password" 
+                        className="form-control" 
+                        value={passwords.newPassword}
+                        onChange={e => setPasswords({...passwords, newPassword: e.target.value})}
+                        required
+                    />
                 </div>
-            </div>
+                <div className="mb-4">
+                    <label className="form-label">Confirmar Contraseña</label>
+                    <input 
+                        type="password" 
+                        className="form-control" 
+                        value={passwords.confirmPassword}
+                        onChange={e => setPasswords({...passwords, confirmPassword: e.target.value})}
+                        required
+                    />
+                </div>
+                <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+                    {loading ? "Guardando..." : "Actualizar Contraseña"}
+                </button>
+            </form>
         </div>
       </div>
     </div>

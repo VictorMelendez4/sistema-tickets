@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  //  FUNCIÓN CORREGIDA: Solo guardamos el usuario, no el token (el token va en cookie)
+  // ✅ FUNCIÓN CORREGIDA: Solo guardamos el usuario, no el token (el token va en cookie)
   const setAuthData = (userData) => {
     try {
         if (!userData) return;
@@ -65,19 +65,10 @@ export function AuthProvider({ children }) {
     checkLogin();
   }, []);
 
- const login = async (email, password) => {
-    // 1. Recibimos la "caja" completa del backend
+  const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
-    
-    // 2. CORRECCIÓN: Sacamos solo el usuario de adentro
-    // Tu backend devuelve: { status: "success", user: { ...datos... } }
-    if (data.user) {
-        setAuthData(data.user); // Guardamos solo los datos limpios
-        return data.user;
-    } 
-    
-    // (Por seguridad, si algún día cambia el backend)
-    setAuthData(data);
+    // El backend manda la Cookie sola. Nosotros solo guardamos los datos del usuario.
+    setAuthData(data); 
     return data;
   };
 
