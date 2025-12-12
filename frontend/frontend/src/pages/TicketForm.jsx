@@ -1,9 +1,14 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom"; // Importar useLocation
 import { api } from "../api/axios";
-import toast from "react-hot-toast"; // Librería de notificaciones
+import toast from "react-hot-toast";
 
 export default function TicketForm() {
+  // Hooks
+  const navigate = useNavigate();
+  const location = useLocation(); // Para leer los datos del botón rápido
+
+  // Estados
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [department, setDepartment] = useState("SOPORTE GENERAL");
@@ -11,7 +16,14 @@ export default function TicketForm() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
+  // 👇 EFECTO MÁGICO: Si vienes de un botón rápido, pre-llenamos el formulario
+  useEffect(() => {
+    if (location.state) {
+        if (location.state.title) setTitle(location.state.title);
+        if (location.state.dept) setDepartment(location.state.dept);
+        if (location.state.priority) setPriority(location.state.priority);
+    }
+  }, [location]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,25 +35,14 @@ export default function TicketForm() {
       formData.append("description", description);
       formData.append("department", department);
       formData.append("priority", priority);
-      
-      if (file) {
-        formData.append("file", file);
-      }
+      if (file) formData.append("file", file);
 
       await api.post("/tickets", formData);
       
-      // NOTIFICACIÓN MEJORADA
-      toast.success("¡Reporte enviado! El equipo ha sido notificado.", {
-        style: { borderRadius: '10px', background: '#333', color: '#fff' },
-        duration: 4000
-      });
-      
+      toast.success("Ticket creado exitosamente 🚀");
       navigate("/mis-tickets");
     } catch (error) {
-      // NOTIFICACIÓN DE ERROR
-      toast.error("No se pudo enviar el reporte. Intenta de nuevo.", {
-        style: { borderRadius: '10px', background: '#fff0f0', color: '#d00' }
-      });
+      toast.error("Error al crear el ticket ❌");
     } finally {
       setLoading(false);
     }
@@ -93,6 +94,7 @@ export default function TicketForm() {
               <textarea 
                 className="form-control" 
                 rows="4" 
+                placeholder="Describe tu problema aquí..."
                 value={description} 
                 onChange={(e) => setDescription(e.target.value)} 
                 required
@@ -107,7 +109,6 @@ export default function TicketForm() {
                     accept="image/*, .pdf" 
                     onChange={(e) => setFile(e.target.files[0])} 
                 />
-                <div className="form-text">Puedes subir capturas de pantalla o fotos del error.</div>
             </div>
 
             <div className="d-flex justify-content-end gap-2">

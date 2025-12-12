@@ -99,16 +99,18 @@ const Dashboard = () => {
             </div>
         </div>
 
-        <h5 className="fw-bold text-dark mb-3">Accesos Rápidos</h5>
+        <h5 className="fw-bold text-dark mb-3">¿Qué necesitas reportar?</h5>
         <div className="row g-3 mb-5">
             {[
-                { label: "Falla de Internet", icon: "bi-wifi-off", color: "danger" },
-                { label: "Equipo Lento", icon: "bi-laptop", color: "warning" },
-                { label: "Software / Licencias", icon: "bi-window-stack", color: "info" },
-                { label: "Impresora", icon: "bi-printer", color: "secondary" }
+                // Agregamos 'data' con lo que queremos pre-llenar
+                { label: "Falla de Internet", icon: "bi-wifi-off", color: "danger", data: { title: "Sin conexión a Internet", dept: "REDES", priority: "ALTA" } },
+                { label: "Equipo Lento", icon: "bi-laptop", color: "warning", data: { title: "Mi equipo está muy lento", dept: "HARDWARE", priority: "MEDIA" } },
+                { label: "Licencias / Office", icon: "bi-window-stack", color: "info", data: { title: "Solicitud de Software", dept: "SOFTWARE", priority: "BAJA" } },
+                { label: "Falla de Impresora", icon: "bi-printer", color: "secondary", data: { title: "La impresora no responde", dept: "HARDWARE", priority: "MEDIA" } }
             ].map((item, idx) => (
                 <div key={idx} className="col-6 col-md-3">
-                    <Link to="/nuevo-ticket" className="text-decoration-none">
+                    {/* Usamos 'state' para pasar los datos al formulario */}
+                    <Link to="/nuevo-ticket" state={item.data} className="text-decoration-none">
                         <div className="card border-0 shadow-sm h-100 hover-shadow transition">
                             <div className="card-body text-center py-4">
                                 <div className={`bg-${item.color} bg-opacity-10 text-${item.color} rounded-circle d-inline-flex p-3 mb-3`}>
