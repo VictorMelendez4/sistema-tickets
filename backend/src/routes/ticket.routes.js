@@ -19,7 +19,7 @@ router.use(protect);
 
 // 1. Rutas generales
 router.route("/")
-  .post(upload.single("image"), createTicket) // 👈 Aquí va el middleware de imagen
+  .post(upload.single("file"), createTicket) // 👈 Aquí va el middleware de imagen
   .get(getTickets);
 
 // 2. Ruta de Estadísticas (¡IMPORTANTE! Debe ir ANTES de /:id)
