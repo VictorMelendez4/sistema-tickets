@@ -1,100 +1,121 @@
-import { createContext, useState, useEffect, useContext } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import Cookies from "js-cookie";
 import { api } from "../api/axios";
-import Cookies from "js-cookie"; // Asegúrate de tener instalado js-cookie, si no, usa la lógica manual
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth debe usarse dentro de un AuthProvider");
-  }
+  if (!context) throw new Error("useAuth debe usarse dentro de un AuthProvider");
   return context;
 };
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ✅ FUNCIÓN CORREGIDA: Solo guardamos el usuario, no el token (el token va en cookie)
+  // Función segura para guardar usuario
   const setAuthData = (userData) => {
+    // 🛡️ Aseguramos que siempre tenga campos básicos para evitar crash
+    const safeUser = {
+        ...userData,
+        firstName: userData.firstName || "Usuario",
+        lastName: userData.lastName || "",
+        role: userData.role || "CLIENT"
+    };
+    setUser(safeUser);
+    setIsAuthenticated(true);
+    localStorage.setItem("user", JSON.stringify(safeUser));
+  };
+
+  const signup = async (user) => {
     try {
-        if (!userData) return;
-        localStorage.setItem("user", JSON.stringify(userData));
-        setUser(userData);
-        setIsAuthenticated(true);
+      const res = await api.post("/auth/register", user);
+      setAuthData(res.data.user);
     } catch (error) {
-        console.error("Error guardando sesión:", error);
+      console.error(error);
+      throw error;
     }
   };
 
-  //  CARGA BLINDADA: No explota si hay basura en el navegador
+  const login = async (email, password) => {
+    try {
+      const res = await api.post("/auth/login", { email, password });
+      // Soportamos ambas estructuras de respuesta por seguridad
+      const userData = res.data.user || res.data;
+      setAuthData(userData);
+      return userData;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      Cookies.remove("token");
+      localStorage.removeItem("user"); // Borramos datos viejos
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  };
+
+  // Verificar sesión al cargar la página
   useEffect(() => {
-    async function checkLogin() {
+    const checkLogin = async () => {
+      const cookies = Cookies.get();
       const storedUser = localStorage.getItem("user");
 
-      // Validación extra: Si es null, vacío o la palabra "undefined"
-      if (!storedUser || storedUser === "undefined") {
+      if (!cookies.token) {
         setIsAuthenticated(false);
+        setUser(null);
         setLoading(false);
         return;
       }
 
       try {
-        // Intentamos convertir el texto a objeto
-        const parsedUser = JSON.parse(storedUser);
-        
-        // Si funcionó, restauramos la sesión visualmente
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-        
-        // (Opcional) Aquí podrías verificar con el backend si la cookie sigue viva
-        // await api.get('/auth/verify'); 
-
+        // Intentamos verificar con el backend
+        const res = await api.get("/auth/verify");
+        if (!res.data) throw new Error("Token inválido");
+        setAuthData(res.data);
       } catch (error) {
-        // Si falla (JSON inválido), limpiamos la basura automáticamente
-        console.warn("Sesión corrupta detectada. Limpiando...");
-        localStorage.removeItem("user");
-        setUser(null);
-        setIsAuthenticated(false);
+        // Si falla el backend pero tenemos datos locales, los usamos temporalmente
+        // para no sacar al usuario bruscamente (Fail-safe)
+        if (storedUser) {
+           try {
+             setAuthData(JSON.parse(storedUser));
+           } catch (e) {
+             setIsAuthenticated(false);
+             setUser(null);
+           }
+        } else {
+           setIsAuthenticated(false);
+           setUser(null);
+        }
       } finally {
         setLoading(false);
       }
-    }
+    };
     checkLogin();
   }, []);
-
-  const login = async (email, password) => {
-    const { data } = await api.post("/auth/login", { email, password });
-    // El backend manda la Cookie sola. Nosotros solo guardamos los datos del usuario.
-    setAuthData(data); 
-    return data;
-  };
-
-  const logout = async () => {
-    try {
-        await api.post("/auth/logout"); // Avisar al backend para borrar cookie
-    } catch (error) {
-        console.error(error);
-    }
-    localStorage.removeItem("user"); // Borrar datos locales
-    setUser(null);
-    setIsAuthenticated(false);
-  };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
+        signup,
         login,
         logout,
+        user,
         isAuthenticated,
         loading,
-        setAuthData,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
-}
+};

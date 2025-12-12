@@ -13,7 +13,7 @@ import Layout from "../components/Layout";
 
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <div className="vh-100 d-flex justify-content-center align-items-center">Cargando...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return children;
 }
@@ -28,27 +28,25 @@ export default function AppRouter() {
 
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         
-        {/* INICIO (Métricas y Gráficas) */}
+        {/* INICIO (Dashboard de Métricas y Gráficas) */}
         <Route path="/" element={<Dashboard />} />
         
-        {/* 👇 CAMBIO CLAVE: "Monitor Global" ahora muestra la LISTA DE TODOS LOS TICKETS */}
+        {/* 👇 AQUÍ ESTÁ LA MAGIA: Monitor Global -> Lista de TODOS los tickets */}
         <Route path="/monitor-global" element={<TicketList viewType="ALL" />} />
         
-        {/* PERFIL */}
         <Route path="/perfil" element={<Profile />} />
 
-        {/* RUTAS CLIENTE */}
+        {/* CLIENTES */}
         <Route path="/nuevo-ticket" element={<TicketForm />} />
         <Route path="/mis-tickets" element={<TicketList viewType="CLIENT" />} />
 
-        {/* RUTAS STAFF */}
+        {/* STAFF */}
         <Route path="/bandeja-entrada" element={<TicketList viewType="AVAILABLE" />} />
         <Route path="/mis-casos" element={<TicketList viewType="MINE" />} />
         
-        {/* DETALLE */}
         <Route path="/tickets/:id" element={<TicketDetail />} />
         
-        {/* RUTAS ADMIN */}
+        {/* ADMIN */}
         {user?.role === "ADMIN" && (
            <>
              <Route path="/alta-personal" element={<CreateSupport />} />
