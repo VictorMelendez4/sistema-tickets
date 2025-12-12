@@ -6,7 +6,8 @@ import toast from "react-hot-toast";
 
 // URL BASE PARA LAS IMÁGENES
 //const API_URL = "http://localhost:4000";
-const API_URL = "http://159.54.142.179";
+//const API_URL = "http://159.54.142.179";
+const API_URL = "https://northcode-soporte.duckdns.org";
 
 export default function TicketDetail() {
   const { id } = useParams();

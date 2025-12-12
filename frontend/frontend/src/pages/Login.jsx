@@ -50,7 +50,7 @@ export default function Login() {
               <div className="bg-primary rounded-3 d-flex align-items-center justify-content-center shadow-sm" style={{width: 40, height: 40}}>
                 <i className="bi bi-headset text-white fs-4"></i>
               </div>
-              <span className="fs-4 fw-bold text-dark tracking-tight">HelpDesk Pro</span>
+              <span className="fs-4 fw-bold text-dark tracking-tight">North Code Soporte</span>
             </div>
 
             <div className="mb-4">

@@ -1,165 +1,111 @@
-import { Outlet, NavLink, Link } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useEffect } from "react";
 
-export default function Layout() {
-  const { user, logout } = useAuth();
+const Layout = () => {
+  const { user, logout, loading } = useAuth();
+  const navigate = useNavigate();
 
-  // 1. Contenedor Principal: Ocupa toda la pantalla y no deja que nada se salga
-  const layoutContainerStyle = {
-    display: "flex",
-    height: "100vh", // Altura exacta de la ventana
-    overflow: "hidden", // Evita scroll doble en el navegador
-    backgroundColor: "#1a1f2c", // Fondo base oscuro
-  };
+  // Protección de ruta: Si no hay usuario y terminó de cargar, mandar al login
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/login");
+    }
+  }, [user, loading, navigate]);
 
-  // 2. Sidebar: Ancho fijo, y si es muy alto, tiene su propio scroll
-  const sidebarStyle = {
-    width: "260px",
-    backgroundColor: "#1a1f2c",
-    color: "white",
-    display: "flex",
-    flexDirection: "column",
-    padding: "20px",
-    borderRight: "1px solid rgba(255,255,255,0.05)", // Línea sutil divisora
-    overflowY: "auto", // Scroll interno si el menú es muy largo
-    flexShrink: 0, // No permitimos que se encoja
-  };
+  if (loading) return <div className="d-flex justify-content-center align-items-center vh-100"><div className="spinner-border text-primary" role="status"><span className="visually-hidden">Cargando...</span></div></div>;
+  if (!user) return null; // Evita parpadeo antes de redirigir
 
-  // 3. Main: Toma el resto del espacio y TIENE SU PROPIO SCROLL
-  const mainStyle = {
-    flex: 1, // Ocupa todo el espacio restante
-    backgroundColor: "#121212", // Fondo muy oscuro para el contenido (Dark Mode)
-    overflowY: "auto", // <--- AQUÍ ESTÁ EL TRUCO: El scroll está dentro de este panel
-    padding: "0",
-    position: "relative"
-  };
-
-  const linkStyle = ({ isActive }) => ({
-    display: "flex",
-    alignItems: "center",
-    padding: "12px 15px",
-    textDecoration: "none",
-    color: isActive ? "white" : "rgba(255,255,255,0.7)",
-    backgroundColor: isActive ? "#0d6efd" : "transparent",
-    borderRadius: "8px",
-    marginBottom: "8px",
-    fontWeight: isActive ? "bold" : "normal",
-    transition: "all 0.2s"
-  });
-
-  const sectionTitleStyle = {
-    fontSize: "0.75rem",
-    fontWeight: "bold",
-    textTransform: "uppercase",
-    color: "rgba(255,255,255,0.4)",
-    marginTop: "20px",
-    marginBottom: "10px",
-    letterSpacing: "1px"
-  };
+  // Función auxiliar para estilos de los links del menú
+  // Se adapta al fondo oscuro: blanco brillante si está activo, semitransparente si no.
+  const navLinkClass = ({ isActive }) =>
+    `nav-link mb-2 rounded-3 p-3 d-flex align-items-center gap-3 transition-all ${
+      isActive
+        ? "text-white bg-white bg-opacity-25 fw-bold shadow-sm" // Estado Activo
+        : "text-white-50 hover:text-white hover:bg-white hover:bg-opacity-10" // Estado Inactivo (con hover)
+    }`;
 
   return (
-    <div style={layoutContainerStyle}>
-      
-      {/* === SIDEBAR IZQUIERDO === */}
-      <aside style={sidebarStyle} className="custom-scroll">
-        
+    <div className="d-flex">
+      {/* ================= SIDEBAR OSCURA PROFESIONAL ================= */}
+      <div
+        className="vh-100 position-fixed p-4 d-flex flex-column text-white shadow-lg"
+        style={{
+          width: "260px",
+          backgroundColor: "var(--nc-primary)", // Usa el azul marino definido en CSS
+          zIndex: 1000,
+          transition: "all 0.3s ease",
+        }}
+      >
         {/* LOGO */}
-        <div className="mb-4 d-flex align-items-center gap-2">
-            <i className="bi bi-ticket-perforated-fill fs-3 text-primary"></i>
-            <h4 className="m-0 fw-bold">North Code</h4>
+        <div className="mb-5 d-flex align-items-center gap-2 ps-2">
+            {/* Usamos el color de acento (cian) para el icono */}
+            <i className="bi bi-shield-lock-fill fs-2" style={{color: "var(--nc-accent)"}}></i>
+            <div style={{lineHeight: '1.1'}}>
+                <h4 className="m-0 fw-black text-white" style={{letterSpacing: "1px", fontSize: '1.3rem'}}>NORTH CODE</h4>
+                <small className="text-white-50" style={{fontSize: '0.8rem'}}>Soporte TI</small>
+            </div>
         </div>
 
-        {/* MENÚ */}
-        <nav className="flex-grow-1">
-            <NavLink to="/" style={linkStyle}>
-                <i className="bi bi-speedometer2 me-2"></i> Dashboard
+        {/* MENÚ DE NAVEGACIÓN */}
+        <nav className="nav nav-pills flex-column flex-grow-1">
+          <NavLink to="/" className={navLinkClass} end>
+            <i className="bi bi-speedometer2 fs-5"></i> Inicio
+          </NavLink>
+
+          {/* Enlaces para CLIENTES */}
+          {user.role === "CLIENT" && (
+            <>
+              <NavLink to="/nuevo-ticket" className={navLinkClass}>
+                <i className="bi bi-plus-circle-fill fs-5"></i> Nuevo Reporte
+              </NavLink>
+              <NavLink to="/mis-tickets" className={navLinkClass}>
+                <i className="bi bi-list-check fs-5"></i> Historial
+              </NavLink>
+            </>
+          )}
+
+          {/* Enlaces para STAFF (Admin y Soporte) */}
+          {["ADMIN", "SUPPORT"].includes(user.role) && (
+            <NavLink to="/monitor-global" className={navLinkClass}>
+               <i className="bi bi-activity fs-5"></i> Monitor Global
             </NavLink>
+          )}
 
-            {/* SECCIÓN CLIENTE */}
-            {user.role === "CLIENT" && (
-                <>
-                    <div style={sectionTitleStyle}>OPERACIONES</div>
-                    <NavLink to="/nuevo-ticket" style={linkStyle}>
-                        <i className="bi bi-plus-circle me-2"></i> Nuevo Reporte
-                    </NavLink>
-                    <NavLink to="/mis-tickets" style={linkStyle}>
-                        <i className="bi bi-list-ul me-2"></i> Mis Tickets
-                    </NavLink>
-                </>
-            )}
-
-            {/* SECCIÓN SOPORTE */}
-            {(user.role === "SUPPORT" || user.role === "ADMIN") && (
-                <>
-                    <div style={sectionTitleStyle}>SOPORTE</div>
-                    <NavLink to="/bandeja-entrada" style={linkStyle}>
-                        <i className="bi bi-inbox me-2"></i> Bandeja de Entrada
-                    </NavLink>
-                    <NavLink to="/mis-casos" style={linkStyle}>
-                        <i className="bi bi-briefcase me-2"></i> Mis Casos Activos
-                    </NavLink>
-                </>
-            )}
-
-            {/* SECCIÓN ADMIN */}
-            {user.role === "ADMIN" && (
-                <>
-                    <div style={sectionTitleStyle}>ADMINISTRACIÓN</div>
-                    <NavLink to="/tickets-global" style={linkStyle}>
-                        <i className="bi bi-globe me-2"></i> Monitor Global
-                    </NavLink>
-                    <NavLink to="/crear-staff" style={linkStyle}>
-                        <i className="bi bi-person-plus me-2"></i> Alta de Personal
-                    </NavLink>
-                    <NavLink to="/usuarios" style={linkStyle}>
-                        <i className="bi bi-people me-2"></i> Gestionar Usuarios
-                    </NavLink>
-                </>
-            )}
+          {/* Enlaces exclusivos ADMIN */}
+          {user.role === "ADMIN" && (
+            <NavLink to="/alta-personal" className={navLinkClass}>
+               <i className="bi bi-person-badge-fill fs-5"></i> Alta de Personal
+            </NavLink>
+          )}
         </nav>
 
-{/* FOOTER USUARIO */}
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "20px" }}>
-            <div className="d-flex align-items-center mb-3">
-                <div 
-                    className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2 fw-bold"
-                    style={{ width: "40px", height: "40px", minWidth: "40px" }}
-                >
-                    {user.firstName.charAt(0)}
+        {/* USUARIO Y LOGOUT */}
+        <div className="mt-auto pt-4 border-top border-white border-opacity-10">
+            <div className="d-flex align-items-center mb-3 ps-2">
+                <div className="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px'}}>
+                    <i className="bi bi-person-fill fs-5 text-white"></i>
                 </div>
-                <div style={{ overflow: "hidden" }}>
-                    <h6 className="m-0 fw-bold text-truncate" title={`${user.firstName} ${user.lastName}`}>
-                        {user.firstName} {user.lastName}
-                    </h6>
-                    
-                    {/* ROL */}
-                    <small className="text-white-50 d-block" style={{ fontSize: "0.7rem", lineHeight: "1.2" }}>
-                        {user.role}
-                    </small>
-
-                    
-                    {user.department && (
-                        <small className="text-info d-block text-truncate" style={{ fontSize: "0.65rem", opacity: 0.9 }}>
-                            <i className="bi bi-building me-1"></i>{user.department}
-                        </small>
-                    )}
+                <div className="overflow-hidden">
+                    <p className="m-0 fw-bold text-truncate">{user.firstName}</p>
+                    <small className="text-white-50 text-truncate d-block" style={{fontSize: '0.75rem'}}>{user.role === 'CLIENT' ? 'Cliente' : user.department}</small>
                 </div>
             </div>
-
-            <Link to="/perfil" className="btn btn-sm btn-outline-light w-100 mb-2 border-0 text-start ps-3">
-                <i className="bi bi-person-gear me-2"></i> Mi Perfil
-            </Link>
-
-            <button onClick={logout} className="btn btn-sm btn-outline-danger w-100 border-0 text-start ps-3">
-                <i className="bi bi-box-arrow-right me-2"></i> Cerrar Sesión
-            </button>
+          <button onClick={logout} className="btn btn-danger bg-gradient w-100 border-0 py-2 d-flex align-items-center justify-content-center gap-2 shadow-sm" style={{backgroundColor: '#d9534f'}}>
+            <i className="bi bi-box-arrow-left fs-5"></i> Cerrar Sesión
+          </button>
         </div>
-      </aside>
+      </div>
 
-      {/* === CONTENIDO PRINCIPAL DERECHO === */}
-      <main style={mainStyle}>
-        <Outlet />
-      </main>
+      {/* ================= CONTENIDO PRINCIPAL ================= */}
+      <div className="flex-grow-1" style={{ marginLeft: "260px", minHeight: "100vh", backgroundColor: "var(--bs-body-bg)" }}>
+        <div className="container-fluid p-5">
+          {/* Aquí se renderizan las páginas (Dashboard, Tickets, etc.) */}
+          <Outlet />
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default Layout;
