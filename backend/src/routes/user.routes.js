@@ -3,8 +3,9 @@ import {
     getAllUsers, 
     updateUserRole, 
     deleteUser, 
-    createStaff,     // 👈 Nueva
-    getStaffMetrics  // 👈 Nueva
+    createStaff,     
+    getStaffMetrics,
+    getMyStats  
 } from "../controllers/user.controller.js";
 import { protect, authorize } from "../middlewares/auth.middleware.js";
 
@@ -12,6 +13,7 @@ const router = Router();
 
 // Todo requiere ser ADMIN
 router.use(protect);
+router.get("/profile/stats", getMyStats);
 router.use(authorize("ADMIN"));
 
 // 1. Ruta de Métricas (¡SIEMPRE ANTES DEL ID!)
