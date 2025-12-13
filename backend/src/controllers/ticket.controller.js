@@ -120,14 +120,16 @@ export async function deleteTicket(req, res) {
   }
 }
 
-// 👇 NUEVA FUNCIÓN: ESTADÍSTICAS DEL DASHBOARD
+// ESTADÍSTICAS DEL DASHBOARD
 export async function getTicketStats(req, res) {
   try {
     // Cuenta documentos según su estado
     const total = await Ticket.countDocuments();
     const pending = await Ticket.countDocuments({ status: "ABIERTO" }); 
     const inProcess = await Ticket.countDocuments({ status: "EN_PROCESO" });
-    const resolved = await Ticket.countDocuments({ status: "RESUELTO" }); // O "CERRADO" según uses en tu BD
+    const resolved = await Ticket.countDocuments({ 
+        status: { $in: ["RESUELTO", "CERRADO"] } 
+    });
 
     res.json({
       total,
