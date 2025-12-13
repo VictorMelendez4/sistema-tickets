@@ -5,8 +5,6 @@ import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
 // URL BASE PARA LAS IMÁGENES
-//const API_URL = "http://localhost:4000";
-//const API_URL = "http://159.54.142.179";
 const API_URL = "https://northcode-soporte.duckdns.org";
 
 export default function TicketDetail() {
@@ -39,12 +37,14 @@ export default function TicketDetail() {
             setFeedback(data.feedback);
         }
 
+        // 👇 CORRECCIÓN AQUÍ: Usamos la ruta nueva /users/staff/agents
         if (user.role !== "CLIENT") {
-          const agentsRes = await api.get("/auth/support-agents");
+          const agentsRes = await api.get("/users/staff/agents"); // <-- RUTA CORREGIDA
           setAgents(agentsRes.data);
         }
       } catch (error) {
-        toast.error("Error cargando información");
+        // No mostramos toast si falla solo la lista de agentes para no asustar al usuario
+        console.error("Error cargando detalles", error);
       } finally {
         setLoading(false);
       }
@@ -127,7 +127,6 @@ export default function TicketDetail() {
         {/* IZQUIERDA: Detalles y Chat */}
         <div className="col-lg-8">
           
-          {/* 1. TARJETA PRINCIPAL (DETALLES) */}
           <div className="card shadow-sm border-0 mb-4">
             <div className="card-body p-4">
               <div className="d-flex justify-content-between align-items-start mb-3">
@@ -142,7 +141,6 @@ export default function TicketDetail() {
                 <p className="mb-0 text-dark" style={{ whiteSpace: "pre-wrap" }}>{ticket.description}</p>
               </div>
 
-              {/* 👇 2. ZONA DE EVIDENCIA (ARCHIVO ADJUNTO) */}
               {ticket.attachment && (
                 <div className="mt-3">
                     <h6 className="fw-bold text-secondary small mb-2"><i className="bi bi-paperclip"></i> ARCHIVO ADJUNTO</h6>
@@ -167,7 +165,6 @@ export default function TicketDetail() {
             </div>
           </div>
 
-          {/* 3. CALIFICACIÓN (Solo Cliente) */}
           {canRate && (
             <div className="card shadow-sm border-0 mb-4 border-warning">
                 <div className="card-body text-center bg-white">
@@ -195,7 +192,6 @@ export default function TicketDetail() {
              </div>
           )}
 
-          {/* 4. CHAT / HISTORIAL */}
           <div className="card shadow-sm border-0">
             <div className="card-header bg-white fw-bold py-3"><i className="bi bi-chat-dots me-2"></i> Historial de Comentarios</div>
             
@@ -255,7 +251,6 @@ export default function TicketDetail() {
           </div>
         </div>
 
-        {/* DERECHA: GESTIÓN */}
         <div className="col-lg-4">
           <div className="card shadow-sm border-0">
             <div className="card-header bg-dark text-white fw-bold py-3">
@@ -263,7 +258,6 @@ export default function TicketDetail() {
             </div>
             <div className="card-body">
               
-                {/*  ACCESO RÁPIDO A EVIDENCIA (Solo si existe) */}
               {ticket.attachment && (
                 <div className="mb-4 pb-3 border-bottom">
                     <label className="form-label fw-bold small text-muted">EVIDENCIA</label>

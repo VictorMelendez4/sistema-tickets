@@ -123,3 +123,15 @@ export const getMyStats = async (req, res) => {
         res.status(500).json({ msg: "Error stats perfil" });
     }
 };
+// ⭐ 6. OBTENER LISTA DE AGENTES (Para asignar tickets)
+export const getSupportAgents = async (req, res) => {
+    try {
+        // Buscamos a todos los que sean SUPPORT o ADMIN
+        const agents = await User.find({ role: { $in: ["SUPPORT", "ADMIN"] } })
+                                 .select("firstName lastName email role");
+        res.json(agents);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Error obteniendo agentes" });
+    }
+};
