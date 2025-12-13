@@ -10,8 +10,9 @@ const Dashboard = () => {
   const [tickets, setTickets] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   
-  // Estados Staff
-  const [stats, setStats] = useState({ total: 0, pendientes: 0, resueltos: 0, enProceso: 0 });
+  // 👇 CAMBIO 1: Inicializamos en INGLÉS para coincidir con el Backend
+  const [stats, setStats] = useState({ total: 0, pending: 0, resolved: 0, inProcess: 0 });
+  
   const [staffMetrics, setStaffMetrics] = useState(null);
   const [monthlyGoal, setMonthlyGoal] = useState(null);
   
@@ -55,7 +56,6 @@ const Dashboard = () => {
                 // Tickets Asignados (Para Soporte)
                 if (user.role === 'SUPPORT') {
                     const myTicketsRes = await axios.get("/tickets");
-                    // Filtramos pendientes y urgentes
                     const myPending = myTicketsRes.data.filter(t => 
                         t.assignedTo?._id === user._id && 
                         !['RESUELTO', 'CERRADO'].includes(t.status)
@@ -76,7 +76,7 @@ const Dashboard = () => {
   if (!user) return null;
 
   // ==============================================================================
-  // VISTA 1: CLIENTE (Sin cambios, ya te gustaba)
+  // VISTA 1: CLIENTE
   // ==============================================================================
   if (user.role === 'CLIENT') {
     return (
@@ -99,17 +99,15 @@ const Dashboard = () => {
             </div>
         </div>
 
-        <h5 className="fw-bold text-dark mb-3">¿Qué necesitas reportar?</h5>
+        <h5 className="fw-bold text-dark mb-3">Accesos Rápidos</h5>
         <div className="row g-3 mb-5">
             {[
-                // Agregamos 'data' con lo que queremos pre-llenar
                 { label: "Falla de Internet", icon: "bi-wifi-off", color: "danger", data: { title: "Sin conexión a Internet", dept: "REDES", priority: "ALTA" } },
                 { label: "Equipo Lento", icon: "bi-laptop", color: "warning", data: { title: "Mi equipo está muy lento", dept: "HARDWARE", priority: "MEDIA" } },
                 { label: "Licencias / Office", icon: "bi-window-stack", color: "info", data: { title: "Solicitud de Software", dept: "SOFTWARE", priority: "BAJA" } },
                 { label: "Falla de Impresora", icon: "bi-printer", color: "secondary", data: { title: "La impresora no responde", dept: "HARDWARE", priority: "MEDIA" } }
             ].map((item, idx) => (
                 <div key={idx} className="col-6 col-md-3">
-                    {/* Usamos 'state' para pasar los datos al formulario */}
                     <Link to="/nuevo-ticket" state={item.data} className="text-decoration-none">
                         <div className="card border-0 shadow-sm h-100 hover-shadow transition">
                             <div className="card-body text-center py-4">
@@ -150,10 +148,9 @@ const Dashboard = () => {
   }
 
   // ==============================================================================
-  // VISTA 2: SOPORTE (Dashboard Operativo - Sin Rankings Globales)
+  // VISTA 2: SOPORTE
   // ==============================================================================
   if (user.role === 'SUPPORT') {
-      // Extraemos MIS datos del ranking global para mostrar MI desempeño personal
       const myMetric = staffMetrics?.rankingGlobal?.find(agent => agent.name.includes(user.firstName)) || { count: 0, avgRating: 0 };
       
       return (
@@ -166,7 +163,6 @@ const Dashboard = () => {
                 <span className="badge bg-primary rounded-pill px-3 py-2">{user.department}</span>
             </div>
 
-            {/* 1. TARJETAS DE RENDIMIENTO PERSONAL (Nuevo) */}
             <div className="row g-4 mb-4">
                 <div className="col-md-4">
                     <div className="card border-0 shadow-sm rounded-4 bg-primary text-white h-100">
@@ -195,7 +191,6 @@ const Dashboard = () => {
             </div>
 
             <div className="row g-4">
-                {/* 2. BANDEJA DE URGENCIAS */}
                 <div className="col-lg-8">
                     <div className="card border-0 shadow-sm rounded-4 h-100">
                         <div className="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
@@ -227,7 +222,6 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* 3. COLUMNA DERECHA: PULSO DEL DEPTO */}
                 <div className="col-lg-4">
                     <div className="card border-0 shadow-sm rounded-4 mb-4">
                         <div className="card-body p-4">
@@ -239,8 +233,6 @@ const Dashboard = () => {
                             <small className="text-muted fst-italic">Mantén este número bajo para mejorar tu calificación.</small>
                         </div>
                     </div>
-                    
-                    {/* Tarjeta Informativa */}
                     <div className="card border-0 shadow-sm rounded-4 bg-light">
                         <div className="card-body p-4">
                             <div className="d-flex gap-3">
@@ -259,7 +251,7 @@ const Dashboard = () => {
   }
 
   // ==============================================================================
-  // VISTA 3: ADMIN (Dashboard Global con Rankings y Todo)
+  // VISTA 3: ADMIN
   // ==============================================================================
   return (
     <div>
@@ -271,7 +263,7 @@ const Dashboard = () => {
             <span className="badge bg-dark rounded-pill px-3 py-2">ADMIN</span>
         </div>
 
-        {/* TARJETAS KPI GLOBALES */}
+        {/* 👇 CAMBIO 2: Usamos las llaves correctas (stats.pending, stats.inProcess, stats.resolved) */}
         <div className="row g-4 mb-5">
             <div className="col-md-3">
                 <div className="card border-0 shadow-sm h-100 rounded-4 border-bottom border-primary border-4">
@@ -285,7 +277,7 @@ const Dashboard = () => {
                  <div className="card border-0 shadow-sm h-100 rounded-4 border-bottom border-warning border-4">
                     <div className="card-body p-4">
                         <h6 className="text-uppercase text-muted fw-bold small">Pendientes</h6>
-                        <h2 className="display-6 fw-bold text-dark mb-0">{stats.pendientes || 0}</h2>
+                        <h2 className="display-6 fw-bold text-dark mb-0">{stats.pending || 0}</h2>
                     </div>
                 </div>
             </div>
@@ -293,7 +285,7 @@ const Dashboard = () => {
                 <div className="card border-0 shadow-sm h-100 rounded-4 border-bottom border-info border-4">
                     <div className="card-body p-4">
                         <h6 className="text-uppercase text-muted fw-bold small">En Proceso</h6>
-                        <h2 className="display-6 fw-bold text-dark mb-0">{stats.enProceso || 0}</h2>
+                        <h2 className="display-6 fw-bold text-dark mb-0">{stats.inProcess || 0}</h2>
                     </div>
                 </div>
             </div>
@@ -301,13 +293,12 @@ const Dashboard = () => {
                  <div className="card border-0 shadow-sm h-100 rounded-4 border-bottom border-success border-4">
                     <div className="card-body p-4">
                         <h6 className="text-uppercase text-muted fw-bold small">Resueltos</h6>
-                        <h2 className="display-6 fw-bold text-dark mb-0">{stats.resueltos || 0}</h2>
+                        <h2 className="display-6 fw-bold text-dark mb-0">{stats.resolved || 0}</h2>
                     </div>
                 </div>
             </div>
         </div>
 
-        {/* RANKINGS Y METAS (SOLO PARA ADMIN) */}
         {staffMetrics && (
             <div className="row g-4">
                 <div className="col-lg-8">
