@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 
 export default function Profile() {
   const { user } = useAuth();
+  //Cambio en las contraseñas
   const [passwords, setPasswords] = useState({ newPassword: "", confirmPassword: "" });
   const [loading, setLoading] = useState(false);
   
