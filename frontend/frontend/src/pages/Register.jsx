@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import toast from 'react-hot-toast';
-
+//
 export default function Register() {
   const navigate = useNavigate();
   // Traemos la función setAuthData del contexto (opcional, por si quisieras auto-login)
